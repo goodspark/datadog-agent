@@ -49,10 +49,11 @@ import (
 )
 
 const (
-	providerPrefixesFlag    = "with-provider-prefixes"
-	providerPrefixSeparator = "@"
-	filePrefix              = "file"
-	k8sSecretPrefix         = "k8s_secret"
+	providerPrefixesFlag       = "with-provider-prefixes"
+	providerPrefixSeparator    = "@"
+	filePrefix                 = "file"
+	k8sSecretPrefix            = "k8s_secret"
+	awsCloudProviderAuthPrefix = "aws_cloud_auth"
 )
 
 // NewKubeClient TODO <agent-core>
@@ -184,6 +185,13 @@ func readSecretsUsingPrefixes(secrets []string, rootPath string, newKubeClientFu
 				res[secretID] = s.Secret{Value: "", ErrorMsg: err.Error()}
 			} else {
 				res[secretID] = providers.ReadKubernetesSecret(kubeClient, id)
+			}
+		case awsCloudProviderAuthPrefix:
+			value, err := providers.AwsCloudAuth()
+			if err != nil {
+				res[secretID] = s.Secret{Value: "", ErrorMsg: err.Error()}
+			} else {
+				res[secretID] = s.Secret{Value: value}
 			}
 		default:
 			res[secretID] = s.Secret{Value: "", ErrorMsg: fmt.Sprintf("provider not supported: %s", prefix)}

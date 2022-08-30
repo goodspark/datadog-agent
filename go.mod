@@ -121,6 +121,7 @@ require (
 	github.com/h2non/filetype v1.1.2-0.20210602110014-3305bbb7ac7b
 	github.com/hashicorp/consul/api v1.13.0
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/hashicorp/go-secure-stdlib/awsutil v0.1.6
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
 	github.com/iceber/iouring-go v0.0.0-20220511091803-99712053f7ec
