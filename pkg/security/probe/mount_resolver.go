@@ -58,15 +58,15 @@ func parseGroupID(mnt *mountinfo.Info) (uint32, error) {
 	return 0, nil
 }
 
-// newMountEventFromMountInfo - Creates a new MountEvent from parsed MountInfo data
-func newMountEventFromMountInfo(mnt *mountinfo.Info) (*model.MountEvent, error) {
+// newMountFromMountInfo - Creates a new MountEvent from parsed MountInfo data
+func newMountFromMountInfo(mnt *mountinfo.Info) (*model.Mount, error) {
 	groupID, err := parseGroupID(mnt)
 	if err != nil {
 		return nil, err
 	}
 
 	// create a MountEvent out of the parsed MountInfo
-	return &model.MountEvent{
+	return &model.Mount{
 		ParentMountID: uint32(mnt.Parent),
 		MountPointStr: mnt.Mountpoint,
 		RootStr:       mnt.Root,
@@ -78,7 +78,7 @@ func newMountEventFromMountInfo(mnt *mountinfo.Info) (*model.MountEvent, error) 
 }
 
 type deleteRequest struct {
-	mount     *model.MountEvent
+	mount     *model.Mount
 	timeoutAt time.Time
 }
 
@@ -86,8 +86,8 @@ type deleteRequest struct {
 type MountResolver struct {
 	statsdClient     statsd.ClientInterface
 	lock             sync.RWMutex
-	mounts           map[uint32]*model.MountEvent
-	devices          map[uint32]map[uint32]*model.MountEvent
+	mounts           map[uint32]*model.Mount
+	devices          map[uint32]map[uint32]*model.Mount
 	deleteQueue      []deleteRequest
 	overlayPathCache *simplelru.LRU
 	parentPathCache  *simplelru.LRU
@@ -122,18 +122,18 @@ func (mr *MountResolver) syncCache(pid uint32) error {
 			continue
 		}
 
-		e, err := newMountEventFromMountInfo(mnt)
+		m, err := newMountFromMountInfo(mnt)
 		if err != nil {
 			return err
 		}
 
-		mr.insert(*e)
+		mr.insert(*m)
 	}
 
 	return nil
 }
 
-func (mr *MountResolver) deleteChildren(parent *model.MountEvent) {
+func (mr *MountResolver) deleteChildren(parent *model.Mount) {
 	for _, mount := range mr.mounts {
 		if mount.ParentMountID == parent.MountID {
 			if _, exists := mr.mounts[mount.MountID]; exists {
@@ -144,7 +144,7 @@ func (mr *MountResolver) deleteChildren(parent *model.MountEvent) {
 }
 
 // deleteDevice deletes MountEvent sharing the same device id for overlay fs mount
-func (mr *MountResolver) deleteDevice(mount *model.MountEvent) {
+func (mr *MountResolver) deleteDevice(mount *model.Mount) {
 	if !mount.IsOverlayFS() {
 		return
 	}
@@ -156,7 +156,7 @@ func (mr *MountResolver) deleteDevice(mount *model.MountEvent) {
 	}
 }
 
-func (mr *MountResolver) delete(mount *model.MountEvent) {
+func (mr *MountResolver) delete(mount *model.Mount) {
 	mr.clearCacheForMountID(mount.MountID)
 	delete(mr.mounts, mount.MountID)
 
@@ -200,7 +200,7 @@ func (mr *MountResolver) GetFilesystem(mountID, pid uint32) string {
 }
 
 // Get returns a mount event from the mount id
-func (mr *MountResolver) Get(mountID, pid uint32) *model.MountEvent {
+func (mr *MountResolver) Get(mountID, pid uint32) *model.Mount {
 	mr.lock.Lock()
 	defer mr.lock.Unlock()
 
@@ -218,12 +218,12 @@ func (mr *MountResolver) Insert(e model.MountEvent) error {
 		return fmt.Errorf("couldn't insert mount_id %d: mount_point_error:%v root_error:%v", e.MountID, e.MountPointPathResolutionError, e.RootPathResolutionError)
 	}
 
-	mr.insert(e)
+	mr.insert(e.Mount)
 
 	return nil
 }
 
-func (mr *MountResolver) insert(e model.MountEvent) {
+func (mr *MountResolver) insert(e model.Mount) {
 	// umount the previous one if exists
 	if prev, ok := mr.mounts[e.MountID]; ok {
 		mr.delete(prev)
@@ -240,7 +240,7 @@ func (mr *MountResolver) insert(e model.MountEvent) {
 
 	deviceMounts := mr.devices[e.Device]
 	if deviceMounts == nil {
-		deviceMounts = make(map[uint32]*model.MountEvent)
+		deviceMounts = make(map[uint32]*model.Mount)
 		mr.devices[e.Device] = deviceMounts
 	}
 	deviceMounts[e.MountID] = &e
@@ -285,7 +285,7 @@ func (mr *MountResolver) getParentPath(mountID uint32) string {
 	return path
 }
 
-func (mr *MountResolver) _getAncestor(mount *model.MountEvent, cache map[uint32]bool) *model.MountEvent {
+func (mr *MountResolver) _getAncestor(mount *model.Mount, cache map[uint32]bool) *model.Mount {
 	if _, exists := cache[mount.MountID]; exists {
 		return nil
 	}
@@ -303,12 +303,12 @@ func (mr *MountResolver) _getAncestor(mount *model.MountEvent, cache map[uint32]
 	return parent
 }
 
-func (mr *MountResolver) getAncestor(mount *model.MountEvent) *model.MountEvent {
+func (mr *MountResolver) getAncestor(mount *model.Mount) *model.Mount {
 	return mr._getAncestor(mount, map[uint32]bool{})
 }
 
 // getOverlayPath uses deviceID to find overlay path
-func (mr *MountResolver) getOverlayPath(mount *model.MountEvent) string {
+func (mr *MountResolver) getOverlayPath(mount *model.Mount) string {
 	if entry, found := mr.overlayPathCache.Get(mount.MountID); found {
 		return entry.(string)
 	}
@@ -383,7 +383,7 @@ func (mr *MountResolver) Start(ctx context.Context) {
 	}()
 }
 
-func (mr *MountResolver) resolveMount(mountID, pid uint32) (*model.MountEvent, error) {
+func (mr *MountResolver) resolveMount(mountID, pid uint32) (*model.Mount, error) {
 	if mountID == 0 {
 		return nil, ErrMountUndefined
 	}
@@ -541,8 +541,8 @@ func NewMountResolver(statsdClient statsd.ClientInterface) (*MountResolver, erro
 	return &MountResolver{
 		statsdClient:     statsdClient,
 		lock:             sync.RWMutex{},
-		devices:          make(map[uint32]map[uint32]*model.MountEvent),
-		mounts:           make(map[uint32]*model.MountEvent),
+		devices:          make(map[uint32]map[uint32]*model.Mount),
+		mounts:           make(map[uint32]*model.Mount),
 		overlayPathCache: overlayPathCache,
 		parentPathCache:  parentPathCache,
 		cacheHitsStats:   atomic.NewInt64(0),
