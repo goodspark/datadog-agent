@@ -1296,6 +1296,334 @@ func (z *LinuxBinprm) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
+func (z *Mount) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "MountID":
+			z.MountID, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "MountID")
+				return
+			}
+		case "GroupID":
+			z.GroupID, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "GroupID")
+				return
+			}
+		case "Device":
+			z.Device, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "Device")
+				return
+			}
+		case "ParentMountID":
+			z.ParentMountID, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "ParentMountID")
+				return
+			}
+		case "ParentInode":
+			z.ParentInode, err = dc.ReadUint64()
+			if err != nil {
+				err = msgp.WrapError(err, "ParentInode")
+				return
+			}
+		case "RootMountID":
+			z.RootMountID, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "RootMountID")
+				return
+			}
+		case "RootInode":
+			z.RootInode, err = dc.ReadUint64()
+			if err != nil {
+				err = msgp.WrapError(err, "RootInode")
+				return
+			}
+		case "FSType":
+			z.FSType, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "FSType")
+				return
+			}
+		case "MountPointStr":
+			z.MountPointStr, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "MountPointStr")
+				return
+			}
+		case "RootStr":
+			z.RootStr, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "RootStr")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *Mount) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 10
+	// write "MountID"
+	err = en.Append(0x8a, 0xa7, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.MountID)
+	if err != nil {
+		err = msgp.WrapError(err, "MountID")
+		return
+	}
+	// write "GroupID"
+	err = en.Append(0xa7, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x49, 0x44)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.GroupID)
+	if err != nil {
+		err = msgp.WrapError(err, "GroupID")
+		return
+	}
+	// write "Device"
+	err = en.Append(0xa6, 0x44, 0x65, 0x76, 0x69, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.Device)
+	if err != nil {
+		err = msgp.WrapError(err, "Device")
+		return
+	}
+	// write "ParentMountID"
+	err = en.Append(0xad, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.ParentMountID)
+	if err != nil {
+		err = msgp.WrapError(err, "ParentMountID")
+		return
+	}
+	// write "ParentInode"
+	err = en.Append(0xab, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x49, 0x6e, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint64(z.ParentInode)
+	if err != nil {
+		err = msgp.WrapError(err, "ParentInode")
+		return
+	}
+	// write "RootMountID"
+	err = en.Append(0xab, 0x52, 0x6f, 0x6f, 0x74, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.RootMountID)
+	if err != nil {
+		err = msgp.WrapError(err, "RootMountID")
+		return
+	}
+	// write "RootInode"
+	err = en.Append(0xa9, 0x52, 0x6f, 0x6f, 0x74, 0x49, 0x6e, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint64(z.RootInode)
+	if err != nil {
+		err = msgp.WrapError(err, "RootInode")
+		return
+	}
+	// write "FSType"
+	err = en.Append(0xa6, 0x46, 0x53, 0x54, 0x79, 0x70, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.FSType)
+	if err != nil {
+		err = msgp.WrapError(err, "FSType")
+		return
+	}
+	// write "MountPointStr"
+	err = en.Append(0xad, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x53, 0x74, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.MountPointStr)
+	if err != nil {
+		err = msgp.WrapError(err, "MountPointStr")
+		return
+	}
+	// write "RootStr"
+	err = en.Append(0xa7, 0x52, 0x6f, 0x6f, 0x74, 0x53, 0x74, 0x72)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.RootStr)
+	if err != nil {
+		err = msgp.WrapError(err, "RootStr")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *Mount) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 10
+	// string "MountID"
+	o = append(o, 0x8a, 0xa7, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
+	o = msgp.AppendUint32(o, z.MountID)
+	// string "GroupID"
+	o = append(o, 0xa7, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x49, 0x44)
+	o = msgp.AppendUint32(o, z.GroupID)
+	// string "Device"
+	o = append(o, 0xa6, 0x44, 0x65, 0x76, 0x69, 0x63, 0x65)
+	o = msgp.AppendUint32(o, z.Device)
+	// string "ParentMountID"
+	o = append(o, 0xad, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
+	o = msgp.AppendUint32(o, z.ParentMountID)
+	// string "ParentInode"
+	o = append(o, 0xab, 0x50, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x49, 0x6e, 0x6f, 0x64, 0x65)
+	o = msgp.AppendUint64(o, z.ParentInode)
+	// string "RootMountID"
+	o = append(o, 0xab, 0x52, 0x6f, 0x6f, 0x74, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
+	o = msgp.AppendUint32(o, z.RootMountID)
+	// string "RootInode"
+	o = append(o, 0xa9, 0x52, 0x6f, 0x6f, 0x74, 0x49, 0x6e, 0x6f, 0x64, 0x65)
+	o = msgp.AppendUint64(o, z.RootInode)
+	// string "FSType"
+	o = append(o, 0xa6, 0x46, 0x53, 0x54, 0x79, 0x70, 0x65)
+	o = msgp.AppendString(o, z.FSType)
+	// string "MountPointStr"
+	o = append(o, 0xad, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x53, 0x74, 0x72)
+	o = msgp.AppendString(o, z.MountPointStr)
+	// string "RootStr"
+	o = append(o, 0xa7, 0x52, 0x6f, 0x6f, 0x74, 0x53, 0x74, 0x72)
+	o = msgp.AppendString(o, z.RootStr)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *Mount) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "MountID":
+			z.MountID, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MountID")
+				return
+			}
+		case "GroupID":
+			z.GroupID, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "GroupID")
+				return
+			}
+		case "Device":
+			z.Device, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Device")
+				return
+			}
+		case "ParentMountID":
+			z.ParentMountID, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ParentMountID")
+				return
+			}
+		case "ParentInode":
+			z.ParentInode, bts, err = msgp.ReadUint64Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ParentInode")
+				return
+			}
+		case "RootMountID":
+			z.RootMountID, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "RootMountID")
+				return
+			}
+		case "RootInode":
+			z.RootInode, bts, err = msgp.ReadUint64Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "RootInode")
+				return
+			}
+		case "FSType":
+			z.FSType, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "FSType")
+				return
+			}
+		case "MountPointStr":
+			z.MountPointStr, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "MountPointStr")
+				return
+			}
+		case "RootStr":
+			z.RootStr, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "RootStr")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *Mount) Msgsize() (s int) {
+	s = 1 + 8 + msgp.Uint32Size + 8 + msgp.Uint32Size + 7 + msgp.Uint32Size + 14 + msgp.Uint32Size + 12 + msgp.Uint64Size + 12 + msgp.Uint32Size + 10 + msgp.Uint64Size + 7 + msgp.StringPrefixSize + len(z.FSType) + 14 + msgp.StringPrefixSize + len(z.MountPointStr) + 8 + msgp.StringPrefixSize + len(z.RootStr)
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
 func (z *PIDContext) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field

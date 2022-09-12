@@ -195,6 +195,13 @@ func (ev *Event) ResolveMountRoot(e *model.MountEvent) string {
 	return e.RootStr
 }
 
+func (ev *Event) ResolveMountPointFullPath(e *model.MountEvent) string {
+	if len(e.MountPointFullPath) == 0 {
+		e.MountPointFullPath = ev.resolvers.MountResolver.GetMountPointFullPath(e.MountID)
+	}
+	return e.MountPointFullPath
+}
+
 // ResolveContainerID resolves the container ID of the event
 func (ev *Event) ResolveContainerID(e *model.ContainerContext) string {
 	if len(e.ID) == 0 {
