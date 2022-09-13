@@ -1355,6 +1355,18 @@ func (z *Mount) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "RootInode")
 				return
 			}
+		case "BindSrcMountID":
+			z.BindSrcMountID, err = dc.ReadUint32()
+			if err != nil {
+				err = msgp.WrapError(err, "BindSrcMountID")
+				return
+			}
+		case "BindSrcInode":
+			z.BindSrcInode, err = dc.ReadUint64()
+			if err != nil {
+				err = msgp.WrapError(err, "BindSrcInode")
+				return
+			}
 		case "FSType":
 			z.FSType, err = dc.ReadString()
 			if err != nil {
@@ -1386,9 +1398,9 @@ func (z *Mount) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Mount) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 10
+	// map header, size 12
 	// write "MountID"
-	err = en.Append(0x8a, 0xa7, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
+	err = en.Append(0x8c, 0xa7, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
 	if err != nil {
 		return
 	}
@@ -1457,6 +1469,26 @@ func (z *Mount) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "RootInode")
 		return
 	}
+	// write "BindSrcMountID"
+	err = en.Append(0xae, 0x42, 0x69, 0x6e, 0x64, 0x53, 0x72, 0x63, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint32(z.BindSrcMountID)
+	if err != nil {
+		err = msgp.WrapError(err, "BindSrcMountID")
+		return
+	}
+	// write "BindSrcInode"
+	err = en.Append(0xac, 0x42, 0x69, 0x6e, 0x64, 0x53, 0x72, 0x63, 0x49, 0x6e, 0x6f, 0x64, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint64(z.BindSrcInode)
+	if err != nil {
+		err = msgp.WrapError(err, "BindSrcInode")
+		return
+	}
 	// write "FSType"
 	err = en.Append(0xa6, 0x46, 0x53, 0x54, 0x79, 0x70, 0x65)
 	if err != nil {
@@ -1493,9 +1525,9 @@ func (z *Mount) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *Mount) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 10
+	// map header, size 12
 	// string "MountID"
-	o = append(o, 0x8a, 0xa7, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
+	o = append(o, 0x8c, 0xa7, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
 	o = msgp.AppendUint32(o, z.MountID)
 	// string "GroupID"
 	o = append(o, 0xa7, 0x47, 0x72, 0x6f, 0x75, 0x70, 0x49, 0x44)
@@ -1515,6 +1547,12 @@ func (z *Mount) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "RootInode"
 	o = append(o, 0xa9, 0x52, 0x6f, 0x6f, 0x74, 0x49, 0x6e, 0x6f, 0x64, 0x65)
 	o = msgp.AppendUint64(o, z.RootInode)
+	// string "BindSrcMountID"
+	o = append(o, 0xae, 0x42, 0x69, 0x6e, 0x64, 0x53, 0x72, 0x63, 0x4d, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x44)
+	o = msgp.AppendUint32(o, z.BindSrcMountID)
+	// string "BindSrcInode"
+	o = append(o, 0xac, 0x42, 0x69, 0x6e, 0x64, 0x53, 0x72, 0x63, 0x49, 0x6e, 0x6f, 0x64, 0x65)
+	o = msgp.AppendUint64(o, z.BindSrcInode)
 	// string "FSType"
 	o = append(o, 0xa6, 0x46, 0x53, 0x54, 0x79, 0x70, 0x65)
 	o = msgp.AppendString(o, z.FSType)
@@ -1587,6 +1625,18 @@ func (z *Mount) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "RootInode")
 				return
 			}
+		case "BindSrcMountID":
+			z.BindSrcMountID, bts, err = msgp.ReadUint32Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "BindSrcMountID")
+				return
+			}
+		case "BindSrcInode":
+			z.BindSrcInode, bts, err = msgp.ReadUint64Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "BindSrcInode")
+				return
+			}
 		case "FSType":
 			z.FSType, bts, err = msgp.ReadStringBytes(bts)
 			if err != nil {
@@ -1619,7 +1669,7 @@ func (z *Mount) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Mount) Msgsize() (s int) {
-	s = 1 + 8 + msgp.Uint32Size + 8 + msgp.Uint32Size + 7 + msgp.Uint32Size + 14 + msgp.Uint32Size + 12 + msgp.Uint64Size + 12 + msgp.Uint32Size + 10 + msgp.Uint64Size + 7 + msgp.StringPrefixSize + len(z.FSType) + 14 + msgp.StringPrefixSize + len(z.MountPointStr) + 8 + msgp.StringPrefixSize + len(z.RootStr)
+	s = 1 + 8 + msgp.Uint32Size + 8 + msgp.Uint32Size + 7 + msgp.Uint32Size + 14 + msgp.Uint32Size + 12 + msgp.Uint64Size + 12 + msgp.Uint32Size + 10 + msgp.Uint64Size + 15 + msgp.Uint32Size + 13 + msgp.Uint64Size + 7 + msgp.StringPrefixSize + len(z.FSType) + 14 + msgp.StringPrefixSize + len(z.MountPointStr) + 8 + msgp.StringPrefixSize + len(z.RootStr)
 	return
 }
 

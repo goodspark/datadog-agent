@@ -2449,6 +2449,14 @@ func (m *Model) GetEvaluator(field eval.Field, regID eval.RegisterID) (eval.Eval
 			Field:  field,
 			Weight: eval.FunctionWeight,
 		}, nil
+	case "mount.source.path":
+		return &eval.StringEvaluator{
+			EvalFnc: func(ctx *eval.Context) string {
+				return (*Event)(ctx.Object).ResolveMountSourceFullPath(&(*Event)(ctx.Object).Mount)
+			},
+			Field:  field,
+			Weight: eval.HandlerWeight,
+		}, nil
 	case "mprotect.req_protection":
 		return &eval.IntEvaluator{
 			EvalFnc: func(ctx *eval.Context) int {
@@ -10248,6 +10256,7 @@ func (e *Event) GetFields() []eval.Field {
 		"mount.mountpoint.path",
 		"mount.parent_mount_id",
 		"mount.retval",
+		"mount.source.path",
 		"mprotect.req_protection",
 		"mprotect.retval",
 		"mprotect.vm_protection",
@@ -11426,6 +11435,8 @@ func (e *Event) GetFieldValue(field eval.Field) (interface{}, error) {
 		return int(e.Mount.Mount.ParentMountID), nil
 	case "mount.retval":
 		return int(e.Mount.SyscallEvent.Retval), nil
+	case "mount.source.path":
+		return e.ResolveMountSourceFullPath(&e.Mount), nil
 	case "mprotect.req_protection":
 		return e.MProtect.ReqProtection, nil
 	case "mprotect.retval":
@@ -15137,6 +15148,8 @@ func (e *Event) GetFieldEventType(field eval.Field) (eval.EventType, error) {
 		return "mount", nil
 	case "mount.retval":
 		return "mount", nil
+	case "mount.source.path":
+		return "mount", nil
 	case "mprotect.req_protection":
 		return "mprotect", nil
 	case "mprotect.retval":
@@ -16898,6 +16911,8 @@ func (e *Event) GetFieldType(field eval.Field) (reflect.Kind, error) {
 		return reflect.Int, nil
 	case "mount.retval":
 		return reflect.Int, nil
+	case "mount.source.path":
+		return reflect.String, nil
 	case "mprotect.req_protection":
 		return reflect.Int, nil
 	case "mprotect.retval":
@@ -20372,6 +20387,13 @@ func (e *Event) SetFieldValue(field eval.Field, value interface{}) error {
 			return &eval.ErrValueTypeMismatch{Field: "Mount.SyscallEvent.Retval"}
 		}
 		e.Mount.SyscallEvent.Retval = int64(v)
+		return nil
+	case "mount.source.path":
+		str, ok := value.(string)
+		if !ok {
+			return &eval.ErrValueTypeMismatch{Field: "Mount.MountSourceFullPath"}
+		}
+		e.Mount.MountSourceFullPath = str
 		return nil
 	case "mprotect.req_protection":
 		v, ok := value.(int)

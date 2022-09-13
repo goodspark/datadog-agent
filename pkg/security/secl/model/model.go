@@ -522,16 +522,18 @@ type ArgsEnvsEvent struct {
 
 // Mount represents a mountpoint
 type Mount struct {
-	MountID       uint32 `field:"mount_id"` // Mount ID of the new mount
-	GroupID       uint32 `field:"-"`
-	Device        uint32 `field:"-"`
-	ParentMountID uint32 `field:"parent_mount_id"` // The ID of the parent mount
-	ParentInode   uint64 `field:"-"`
-	RootMountID   uint32 `field:"-"`
-	RootInode     uint64 `field:"-"`
-	FSType        string `field:"fs_type"` // Type of the mounted file system
-	MountPointStr string `field:"-"`
-	RootStr       string `field:"-"`
+	MountID        uint32 `field:"mount_id"` // Mount ID of the new mount
+	GroupID        uint32 `field:"-"`
+	Device         uint32 `field:"-"`
+	ParentMountID  uint32 `field:"parent_mount_id"` // The ID of the parent mount
+	ParentInode    uint64 `field:"-"`
+	RootMountID    uint32 `field:"-"`
+	RootInode      uint64 `field:"-"`
+	BindSrcMountID uint32 `field:"-"`
+	BindSrcInode   uint64 `field:"-"`
+	FSType         string `field:"fs_type"` // Type of the mounted file system
+	MountPointStr  string `field:"-"`
+	RootStr        string `field:"-"`
 }
 
 // MountEvent represents a mount event
@@ -540,6 +542,7 @@ type MountEvent struct {
 	SyscallEvent
 	Mount
 	MountPointFullPath            string `field:"mountpoint.path,handler:ResolveMountPointFullPath"` // Path of the mount point
+	MountSourceFullPath           string `field:"source.path,handler:ResolveMountSourceFullPath"`    // Source path of a bind mount
 	MountPointPathResolutionError error  `field:"-"`
 	RootPathResolutionError       error  `field:"-"`
 }

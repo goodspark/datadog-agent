@@ -350,6 +350,17 @@ func assertFieldEqual(tb testing.TB, e *sprobe.Event, field string, value interf
 }
 
 //nolint:deadcode,unused
+func assertFieldNotEqual(tb testing.TB, e *sprobe.Event, field string, value interface{}, msgAndArgs ...interface{}) bool {
+	tb.Helper()
+	fieldValue, err := e.GetFieldValue(field)
+	if err != nil {
+		tb.Errorf("failed to get field '%s': %s", field, err)
+		return false
+	}
+	return assert.NotEqual(tb, value, fieldValue, msgAndArgs...)
+}
+
+//nolint:deadcode,unused
 func assertFieldNotEmpty(tb testing.TB, e *sprobe.Event, field string, msgAndArgs ...interface{}) bool {
 	tb.Helper()
 	fieldValue, err := e.GetFieldValue(field)
@@ -674,7 +685,7 @@ func newTestModule(t testing.TB, macroDefs []*rules.MacroDefinition, ruleDefs []
 	if testEnvironment == DockerEnvironment {
 		cmdWrapper = newStdCmdWrapper()
 	} else {
-		wrapper, err := newDockerCmdWrapper(st.Root(), "ubuntu")
+		wrapper, err := newDockerCmdWrapper(st.Root(), st.Root(), "ubuntu")
 		if err == nil {
 			cmdWrapper = newMultiCmdWrapper(wrapper, newStdCmdWrapper())
 		} else {
@@ -1575,7 +1586,7 @@ func (tm *testModule) DecodeActivityDump(t *testing.T, path string) (*sprobe.Act
 }
 
 func (tm *testModule) StartADocker() (*dockerCmdWrapper, error) {
-	docker, err := newDockerCmdWrapper(tm.st.Root(), "alpine")
+	docker, err := newDockerCmdWrapper(tm.st.Root(), tm.st.Root(), "alpine")
 	if err != nil {
 		return nil, err
 	}
