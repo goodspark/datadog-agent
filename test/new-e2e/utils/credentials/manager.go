@@ -5,12 +5,15 @@
 
 package credentials
 
+// StoreID is the id to store the aws credential information
 type StoreID string
 
 const (
+	// AWSSSMStore is the aws store id shared tests
 	AWSSSMStore StoreID = "aws-ssm"
 )
 
+// Manager is used for interacting with the aws systems manager for credentials
 type Manager interface {
 	GetCredential(StoreID, string) (string, error)
 }
@@ -19,6 +22,7 @@ type manager struct {
 	credStores map[StoreID]store
 }
 
+// NewManager creates a Manager
 func NewManager() Manager {
 	return &manager{
 		credStores: map[StoreID]store{
@@ -27,6 +31,7 @@ func NewManager() Manager {
 	}
 }
 
+// GetCredential returns a credential for a given storeId and key
 func (m *manager) GetCredential(storeID StoreID, key string) (string, error) {
 	return m.credStores[storeID].get(key)
 }

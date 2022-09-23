@@ -15,12 +15,14 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
+// Stack is a struct representing a Pulumi Stack
 type Stack struct {
 	projectName string
 	stackName   string
 	stack       auto.Stack
 }
 
+// NewStack creates a Stack
 func NewStack(ctx context.Context, projectName, stackName string, config auto.ConfigMap, deployFunc pulumi.RunFunc) (*Stack, error) {
 	stack, err := auto.UpsertStackInlineSource(ctx, stackName, projectName, deployFunc)
 	if err != nil {
@@ -39,6 +41,7 @@ func NewStack(ctx context.Context, projectName, stackName string, config auto.Co
 	}, nil
 }
 
+// Up creates or updates the resources in a stack
 func (st *Stack) Up(ctx context.Context) (*auto.UpResult, error) {
 	_, err := st.stack.Refresh(ctx)
 	if err != nil {
@@ -53,6 +56,7 @@ func (st *Stack) Up(ctx context.Context) (*auto.UpResult, error) {
 	return &result, err
 }
 
+// Down deletes all resources in a stack
 func (st *Stack) Down(ctx context.Context) error {
 	_, err := st.stack.Refresh(ctx)
 	if err != nil {

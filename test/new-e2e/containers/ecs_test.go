@@ -82,7 +82,7 @@ func TestAgentOnECS(t *testing.T) {
 		}
 
 		return nil
-	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 20))
+	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(20*time.Second), 20))
 	require.NoError(t, err)
 
 	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Minute)

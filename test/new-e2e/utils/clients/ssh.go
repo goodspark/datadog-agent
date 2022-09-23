@@ -1,3 +1,8 @@
+// Unless explicitly stated otherwise all files in this repository are licensed
+// under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/).
+// Copyright 2016-present Datadog, Inc.
+
 package clients
 
 import (
@@ -7,6 +12,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// GetSSHClient returns an ssh Client for the specified host
 func GetSSHClient(user, host, privateKey string, retryInterval time.Duration, maxRetries uint64) (client *ssh.Client, session *ssh.Session, err error) {
 	err = backoff.Retry(func() error {
 		client, session, err = getSSHClient(user, host, privateKey)
