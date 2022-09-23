@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/test-infra-definitions/aws"
+	"github.com/DataDog/test-infra-definitions/aws/ecs/ecs"
 	"github.com/cenkalti/backoff"
-	"github.com/vboulineau/pulumi-definitions/aws"
-	"github.com/vboulineau/pulumi-definitions/aws/ecs/ecs"
 
 	"github.com/DataDog/datadog-agent/test/new-e2e/utils/credentials"
 	"github.com/DataDog/datadog-agent/test/new-e2e/utils/infra"

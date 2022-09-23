@@ -9,16 +9,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/ssh"
 	"os"
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/ssh"
+
 	"github.com/DataDog/datadog-agent/test/new-e2e/utils/clients"
 	"github.com/DataDog/datadog-agent/test/new-e2e/utils/credentials"
 	"github.com/DataDog/datadog-agent/test/new-e2e/utils/infra"
-	"github.com/vboulineau/pulumi-definitions/aws"
-	"github.com/vboulineau/pulumi-definitions/aws/ec2/ec2"
+	"github.com/DataDog/test-infra-definitions/aws"
+	"github.com/DataDog/test-infra-definitions/aws/ec2/ec2"
 
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
