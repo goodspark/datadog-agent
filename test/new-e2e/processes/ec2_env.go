@@ -18,7 +18,6 @@ import (
 	"github.com/DataDog/datadog-agent/test/new-e2e/utils/clients"
 	"github.com/DataDog/datadog-agent/test/new-e2e/utils/credentials"
 	"github.com/DataDog/datadog-agent/test/new-e2e/utils/infra"
-	"github.com/DataDog/test-infra-definitions/aws"
 	"github.com/DataDog/test-infra-definitions/aws/ec2/ec2"
 
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
@@ -41,15 +40,13 @@ type EC2TestEnv struct {
 	ddAPIKey   string
 	instanceIP string
 
-	sshClient *ssh.Client
-	stack     *infra.Stack
+	sshClient   *ssh.Client
+	stackOutput auto.UpResult
 }
 
 // NewEC2TestEnv creates an EC2TestEnv in the aws sandbox env
 func NewEC2TestEnv(name string) (*EC2TestEnv, error) {
 	ec2TestEnv := &EC2TestEnv{}
-	config := auto.ConfigMap{}
-	env := aws.NewSandboxEnvironment(config)
 	credentialsManager := credentials.NewManager()
 
 	// Retrieving necessary secrets
@@ -67,33 +64,22 @@ func NewEC2TestEnv(name string) (*EC2TestEnv, error) {
 		return nil, err
 	}
 
-	ec2TestEnv.stack, err = infra.NewStack(context.Background(),
-		"ci",
-		fmt.Sprintf("ci-agent-%s", name),
-		config,
-		func(ctx *pulumi.Context) error {
-			instance, err := ec2.CreateEC2Instance(ctx, env, name, "", "amd64", "t3.large",
-				"agent-ci-sandbox", initScript)
-			if err != nil {
-				return err
-			}
+	stackOutput, err := infra.GetStackManager().GetStack(context.Background(), "aws/sandbox", fmt.Sprintf("process-agent-%s", name), nil, func(ctx *pulumi.Context) error {
+		instance, err := ec2.CreateEC2Instance(ctx, fmt.Sprintf("process-agent-%s", name), "", ec2.AMD64Arch, "t3.large",
+			"agent-ci-sandbox", initScript)
+		if err != nil {
+			return err
+		}
 
-			ctx.Export("private-ip", instance.PrivateIp)
-			return nil
-		})
-	if err != nil {
-		return nil, err
-	}
-	if ec2TestEnv.stack == nil {
-		return nil, errors.New("the ec2 stack is nil")
-	}
-
-	result, err := ec2TestEnv.stack.Up(context.Background())
+		ctx.Export("private-ip", instance.PrivateIp)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	output, found := result.Outputs["private-ip"]
+	ec2TestEnv.stackOutput = stackOutput
+	output, found := stackOutput.Outputs["private-ip"]
 	if !found {
 		return nil, errors.New("unable to find the ec2 host ip")
 	}
@@ -119,7 +105,6 @@ func (e *EC2TestEnv) Close() {
 	_ = os.Unsetenv("DD_API_KEY")
 	_ = os.Unsetenv("DD_APP_KEY")
 	_ = e.sshClient.Close()
-	_ = e.stack.Down(context.Background())
 }
 
 func createHostName(testName string) string {

@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/test-infra-definitions/aws"
 	"github.com/DataDog/test-infra-definitions/aws/ecs/ecs"
 	"github.com/cenkalti/backoff"
 
@@ -27,35 +26,28 @@ import (
 )
 
 func TestAgentOnECS(t *testing.T) {
-	config := auto.ConfigMap{}
-	env := aws.NewSandboxEnvironment(config)
+	// Fetching credentials
 	credentialsManager := credentials.NewManager()
-
 	apiKey, err := credentialsManager.GetCredential(credentials.AWSSSMStore, "agent.ci.dev.apikey")
 	require.NoError(t, err)
 	appKey, err := credentialsManager.GetCredential(credentials.AWSSSMStore, "agent.ci.dev.appkey")
 	require.NoError(t, err)
 
-	stack, err := infra.NewStack(context.Background(), "ci", "ecs-fargate", config, func(ctx *pulumi.Context) error {
-		return ecs.Run(ctx, env)
+	// Creating the stack
+	parameters := auto.ConfigMap{
+		"ddinfra:aws/ecs/linuxECSOptimizedNodeGroup": auto.ConfigValue{Value: "false"},
+		"ddinfra:aws/ecs/linuxBottlerocketNodeGroup": auto.ConfigValue{Value: "false"},
+		"ddinfra:aws/ecs/windowsLTSCNodeGroup":       auto.ConfigValue{Value: "false"},
+		"ddagent:apiKey":                             auto.ConfigValue{Value: apiKey, Secret: true},
+	}
+	stackOutput, err := infra.GetStackManager().GetStack(context.Background(), "aws/sandbox", "ecs-cluster", parameters, func(ctx *pulumi.Context) error {
+		return ecs.Run(ctx)
 	})
 	require.NoError(t, err)
-	require.NotNil(t, stack)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	result, err := stack.Up(ctx)
-	cancel()
-	require.NoError(t, err)
-
-	// ctx.Export("ecs-cluster-name", ecsCluster.Name)
-	// ctx.Export("ecs-cluster-arn", ecsCluster.Arn)
-	// ctx.Export("ecs-task-arn", taskDef.TaskDefinition.Arn())
-	// ctx.Export("ecs-task-family", taskDef.TaskDefinition.Family())
-	// ctx.Export("ecs-task-version", taskDef.TaskDefinition.Revision())
-
-	ecsClusterName := result.Outputs["ecs-cluster-name"].Value.(string)
-	ecsTaskFamily := result.Outputs["ecs-task-family"].Value.(string)
-	ecsTaskVersion := result.Outputs["ecs-task-version"].Value.(float64)
+	ecsClusterName := stackOutput.Outputs["ecs-cluster-name"].Value.(string)
+	ecsTaskFamily := stackOutput.Outputs["ecs-task-family"].Value.(string)
+	ecsTaskVersion := stackOutput.Outputs["ecs-task-version"].Value.(float64)
 
 	// Check content in Datadog
 	datadogClient := datadog.NewClient(apiKey, appKey)
@@ -77,16 +69,11 @@ func TestAgentOnECS(t *testing.T) {
 			return errors.New("Not all containers")
 		}
 
-		if *series[0].Points[0][1] == 0 {
+		if series[0].Points[0][1] == nil || *series[0].Points[0][1] == 0 {
 			return errors.New("0-value")
 		}
 
 		return nil
 	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(20*time.Second), 20))
-	require.NoError(t, err)
-
-	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Minute)
-	err = stack.Down(ctx)
-	cancel()
 	require.NoError(t, err)
 }
