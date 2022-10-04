@@ -19,8 +19,8 @@ import (
 
 	"github.com/DataDog/datadog-go/v5/statsd"
 	manager "github.com/DataDog/ebpf-manager"
-	"github.com/DataDog/gopsutil/process"
 	"github.com/hashicorp/golang-lru/simplelru"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/atomic"
 	"golang.org/x/sys/unix"

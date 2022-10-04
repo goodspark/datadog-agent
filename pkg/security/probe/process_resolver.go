@@ -23,9 +23,9 @@ import (
 	"unsafe"
 
 	manager "github.com/DataDog/ebpf-manager"
-	"github.com/DataDog/gopsutil/process"
 	lib "github.com/cilium/ebpf"
 	"github.com/hashicorp/golang-lru/simplelru"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.uber.org/atomic"
 
 	"github.com/DataDog/datadog-agent/pkg/security/ebpf/kernel"
@@ -372,7 +372,7 @@ func (p *ProcessResolver) AddExecEntry(entry *model.ProcessCacheEntry) {
 }
 
 // enrichEventFromProc uses /proc to enrich a ProcessCacheEntry with additional metadata
-func (p *ProcessResolver) enrichEventFromProc(entry *model.ProcessCacheEntry, proc *process.Process, filledProc *process.FilledProcess) error {
+func (p *ProcessResolver) enrichEventFromProc(entry *model.ProcessCacheEntry, proc *process.Process, filledProc *utils.FilledProcess) error {
 	// the provided process is a kernel process if its virtual memory size is null
 	if filledProc.MemInfo.VMS == 0 {
 		return fmt.Errorf("cannot snapshot kernel threads")
@@ -1119,7 +1119,7 @@ func (p *ProcessResolver) setAncestor(pce *model.ProcessCacheEntry) {
 }
 
 // syncCache snapshots /proc for the provided pid. This method returns true if it updated the process cache.
-func (p *ProcessResolver) syncCache(proc *process.Process, filledProc *process.FilledProcess) (*model.ProcessCacheEntry, bool) {
+func (p *ProcessResolver) syncCache(proc *process.Process, filledProc *utils.FilledProcess) (*model.ProcessCacheEntry, bool) {
 	pid := uint32(proc.Pid)
 
 	// Check if an entry is already in cache for the given pid.
