@@ -9,3 +9,4 @@
    * [Defining Apps and Binaries](./defining-apps.md)
    * [Registrations](./registrations.md)
    * [Subscriptions](./subscriptions.md)
+ * [Using other components](./using-other-components.md)

@@ -38,7 +38,6 @@ func newConfig(deps dependencies) (Component, error) {
 		warnings, err := MergeConfigurationFiles("datadog", deps.Params.SecurityAgentConfigFilePaths, true)
 		return &cfg{warnings}, err
 	}
-
 	warnings, err := setupConfig(
 		deps.Params.ConfFilePath,
 		deps.Params.ConfigName,

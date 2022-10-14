@@ -25,11 +25,8 @@ import (
 
 	procmodel "github.com/DataDog/agent-payload/v5/process"
 
-	"github.com/DataDog/datadog-agent/cmd/agent/api/response"
 	"github.com/DataDog/datadog-agent/cmd/agent/common"
-	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
 	"github.com/DataDog/datadog-agent/pkg/config"
-	"github.com/DataDog/datadog-agent/pkg/config/settings"
 	tagger_api "github.com/DataDog/datadog-agent/pkg/tagger/api"
 	"github.com/DataDog/datadog-agent/pkg/workloadmeta"
 )
@@ -60,50 +57,7 @@ func createTestDirStructure(
 	return srcDir, dstDir, nil
 }
 
-func TestArchiveName(t *testing.T) {
-	// test with No log level set
-	zipFilePath := getArchivePath()
-	assert.Contains(t, zipFilePath, "Z.zip")
-	assert.NotContains(t, zipFilePath, "info")
-
-	// init and configure logger at runtime
-	config.SetupLogger("TEST", "debug", "", "", true, true, true)
-	ll := settings.LogLevelRuntimeSetting{}
-
-	// set 'trace' level logging
-	err := ll.Set("trace")
-	assert.Nil(t, err)
-
-	// Verify the runtime setting is set to 'trace'
-	v, err := ll.Get()
-	assert.Equal(t, "trace", v)
-	assert.Nil(t, err)
-
-	// verify filePath string ends with the correct log_level
-	zipFilePath = getArchivePath()
-	assert.Contains(t, zipFilePath, "-trace.zip")
-	assert.NotContains(t, zipFilePath, "Z.zip")
-}
-
-func TestCreateArchive(t *testing.T) {
-	common.SetupConfig("./test")
-	mockConfig := config.Mock(t)
-	mockConfig.Set("confd_path", "./test/confd")
-	mockConfig.Set("log_file", "./test/logs/agent.log")
-	zipFilePath := getArchivePath()
-	filePath, err := createArchive(SearchPaths{}, true, zipFilePath, []string{""}, nil, nil)
-
-	require.Nil(t, err)
-	require.Equal(t, zipFilePath, filePath)
-
-	if _, err := os.Stat(zipFilePath); os.IsNotExist(err) {
-		assert.Fail(t, "The Zip File was not created")
-	} else {
-		os.Remove(zipFilePath)
-	}
-}
-
-func TestCreateArchiveAndGoRoutines(t *testing.T) {
+func TestGoRoutines(t *testing.T) {
 	contents := "No Goroutines for you, my friend!"
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -111,158 +65,34 @@ func TestCreateArchiveAndGoRoutines(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	pprofURL = ts.URL
-
-	zipFilePath := getArchivePath()
-	filePath, err := createArchive(SearchPaths{}, true, zipFilePath, []string{""}, nil, nil)
-
-	require.Nil(t, err)
-	require.Equal(t, zipFilePath, filePath)
-
-	// Open a zip archive for reading.
-	z, err := zip.OpenReader(zipFilePath)
-	if err != nil {
-		assert.Fail(t, "Unable to open the flare archive")
-	}
-	defer z.Close()
-	defer os.Remove(zipFilePath)
-
-	// Iterate through the files in the archive,
-	// printing some of their contents.
-	found := false
-	for _, f := range z.File {
-		// find go-routine dump.
-		if path.Base(f.Name) == routineDumpFilename {
-			found = true
-
-			dump, err := f.Open()
-			if err != nil {
-				assert.Fail(t, "Unable to open go-routine dump")
-			}
-			defer dump.Close()
-
-			routines, err := ioutil.ReadAll(dump)
-			if err != nil {
-				assert.Fail(t, "Unable to read go-routine dump")
-			}
-
-			assert.Equal(t, contents, string(routines[:]))
-		}
-	}
-
-	assert.True(t, found, "Go routine dump not found in flare")
-}
-
-// The zipfile should be created even if there is no config file.
-func TestCreateArchiveBadConfig(t *testing.T) {
-	common.SetupConfig("")
-	zipFilePath := getArchivePath()
-	filePath, err := createArchive(SearchPaths{}, true, zipFilePath, []string{""}, nil, nil)
-
-	require.Nil(t, err)
-	require.Equal(t, zipFilePath, filePath)
-
-	if _, err := os.Stat(zipFilePath); os.IsNotExist(err) {
-		assert.Fail(t, "The Zip File was not created")
-	} else {
-		os.Remove(zipFilePath)
-	}
-}
-
-// Ensure sensitive data is redacted
-func TestZipConfigCheck(t *testing.T) {
-	cr := response.ConfigCheckResponse{
-		Configs: make([]integration.Config, 0),
-	}
-	cr.Configs = append(cr.Configs, integration.Config{
-		Name:      "TestCheck",
-		Instances: []integration.Data{[]byte("username: User\npassword: MySecurePass")},
-		Provider:  "FooProvider",
-	})
-
-	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		out, _ := json.Marshal(cr)
-		w.Write(out)
-	}))
-	defer ts.Close()
-	configCheckURL = ts.URL
-
-	dir := t.TempDir()
-
-	zipConfigCheck(dir, "")
-	content, err := ioutil.ReadFile(filepath.Join(dir, "config-check.log"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	assert.NotContains(t, string(content), "MySecurePass")
+	assert.Equal(t, contents, getHTTPCallContent(ts.URL))
 }
 
 func TestIncludeSystemProbeConfig(t *testing.T) {
-	assert := assert.New(t)
 	common.SetupConfig("./test/datadog-agent.yaml")
 	// create system-probe.yaml file because it's in .gitignore
 	_, err := os.Create("./test/system-probe.yaml")
-	assert.NoError(err, "couldn't create system-probe.yaml")
+	require.NoError(t, err, "couldn't create system-probe.yaml")
 	defer os.Remove("./test/system-probe.yaml")
 
-	zipFilePath := getArchivePath()
-	filePath, err := createArchive(SearchPaths{"": "./test/confd"}, true, zipFilePath, []string{""}, nil, nil)
-	assert.NoError(err)
-	assert.Equal(zipFilePath, filePath)
+	mock := flarehelpers.NewFlareBuilderMock(t)
+	createArchive(mock.Fb, SearchPaths{"": "./test/confd"}, true, zipFilePath, []string{""}, nil, nil)
 
-	defer os.Remove(zipFilePath)
-
-	z, err := zip.OpenReader(zipFilePath)
-	assert.NoError(err, "opening the zip shouldn't pop an error")
-
-	var hasDDConfig, hasSysProbeConfig bool
-	for _, f := range z.File {
-		if strings.HasSuffix(f.Name, "datadog-agent.yaml") {
-			hasDDConfig = true
-		}
-		if strings.HasSuffix(f.Name, "system-probe.yaml") {
-			hasSysProbeConfig = true
-		}
-	}
-
-	assert.True(hasDDConfig, "datadog-agent.yaml should've been included")
-	assert.True(hasSysProbeConfig, "system-probe.yaml should've been included")
+	mock.AssertFileExists(t, "datadog-agent.yaml")
+	mock.AssertFileExists(t, "system-probe.yaml")
 }
 
 func TestIncludeConfigFiles(t *testing.T) {
 	assert := assert.New(t)
 
 	common.SetupConfig("./test")
-	zipFilePath := getArchivePath()
-	filePath, err := createArchive(SearchPaths{"": "./test/confd"}, true, zipFilePath, []string{""}, nil, nil)
 
-	assert.NoError(err)
-	assert.Equal(zipFilePath, filePath)
+	mock := flarehelpers.NewFlareBuilderMock(t)
+	createArchive(mock.Fb, SearchPaths{"": "./test/confd"}, true, zipFilePath, []string{""}, nil, nil)
 
-	if _, err := os.Stat(zipFilePath); os.IsNotExist(err) {
-		assert.Fail("The Zip File was not created")
-	}
-
-	defer os.Remove(zipFilePath)
-
-	// asserts that test.yaml and test.yml have been included
-	z, err := zip.OpenReader(zipFilePath)
-	assert.NoError(err, "opening the zip shouldn't pop an error")
-
-	yaml, yml := false, false
-	for _, f := range z.File {
-		if strings.HasSuffix(f.Name, "test.yaml") {
-			yaml = true
-		} else if strings.HasSuffix(f.Name, "test.Yml") {
-			yml = true
-		} else if strings.HasSuffix(f.Name, "not_included.conf") {
-			assert.Fail("not_included.conf should not been included into the flare")
-		}
-	}
-
-	assert.True(yml, "test.yml should've been included")
-	assert.True(yaml, "test.yaml should've been included")
+	mock.AssertFileExists(t, "test.yaml")
+	mock.AssertFileExists(t, "test.Yml")
+	mock.AssertNoFileExists(t, "not_included.conf")
 }
 
 func TestCleanDirectoryName(t *testing.T) {
