@@ -743,7 +743,7 @@ func newTestModule(t testing.TB, macroDefs []*rules.MacroDefinition, ruleDefs []
 
 	kv, _ := kernel.NewKernelVersion()
 
-	if os.Getenv("DD_TESTS_RUNTIME_COMPILED") == "1" && !testMod.module.GetProbe().IsRuntimeCompiled() && !kv.IsSuseKernel() {
+	if os.Getenv("DD_TESTS_RUNTIME_COMPILED") == "1" && !testMod.module.GetProbe().IsRuntimeCompiled() && !kv.IsSuseKernel() && !kv.IsOracleUEKKernel() {
 		return nil, errors.New("failed to runtime compile module")
 	}
 
