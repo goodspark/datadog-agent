@@ -120,3 +120,6 @@ cookbook_file "/tmp/system-probe-tests/pkg/ebpf/bytecode/build/co-re/btf/minimiz
   source "minimized-btfs.tar.xz"
   action :create
 end
+
+docker_installation 'default'
+include_recipe 'docker_compose::installation'

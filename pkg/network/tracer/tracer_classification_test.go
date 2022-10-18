@@ -22,6 +22,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/network"
 	"github.com/DataDog/datadog-agent/pkg/network/config"
 	"github.com/DataDog/datadog-agent/pkg/network/tracer/testutil/grpc"
+	"github.com/DataDog/datadog-agent/pkg/network/tracer/testutil/kafka"
 	"github.com/stretchr/testify/require"
 )
 
@@ -218,6 +219,24 @@ func testProtocolClassification(t *testing.T, cfg *config.Config, clientHost, ta
 				return server.address
 			},
 			want: network.ProtocolHTTP,
+		},
+		{
+			name: "kafka - produce",
+			clientRun: func(t *testing.T, serverAddr string) {
+				client := kafka.NewClient(clientHost, serverAddr)
+				//require.NoError(t, client.CreateTopic("test"))
+				messages := [][]byte{[]byte("msg1"), []byte("msg2")}
+				require.NoError(t, client.Produce("test", messages...))
+				fetchMessages, err := client.Fetch("test")
+				require.NoError(t, err)
+				require.EqualValues(t, messages, fetchMessages)
+			},
+			serverRun: func(t *testing.T, serverAddr string, done chan struct{}) string {
+				serverHost, _, _ := net.SplitHostPort(serverAddr)
+				kafka.RunKafkaServers(t, serverHost)
+				return fmt.Sprintf("%s:9092", serverHost)
+			},
+			want: network.ProtocolKafka,
 		},
 	}
 	for _, tt := range tests {
