@@ -110,6 +110,7 @@ func StartServer(configService *remoteconfig.Service) error {
 	logWriter, _ := config.NewLogWriter(5, seelog.ErrorLvl)
 
 	srv := grpcutil.NewMuxedGRPCServer(
+		tlsAddr,
 		&tls.Config{
 			Certificates: []tls.Certificate{*tlsKeyPair},
 			NextProtos:   []string{"h2"},
@@ -119,7 +120,6 @@ func StartServer(configService *remoteconfig.Service) error {
 		grpcutil.TimeoutHandlerFunc(mux, time.Duration(config.Datadog.GetInt64("server_timeout"))*time.Second),
 	)
 
-	srv.Addr = tlsAddr
 	srv.ErrorLog = stdLog.New(logWriter, "Error from the agent http API server: ", 0) // log errors to seelog
 
 	tlsListener := tls.NewListener(listener, srv.TLSConfig)
