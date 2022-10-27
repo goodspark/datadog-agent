@@ -7,6 +7,7 @@
 INSTALL_DIR=/opt/datadog-agent
 LOG_DIR=/var/log/datadog
 CONFIG_DIR=/etc/datadog-agent
+RUN_DIR=/opt/datadog-agent/run
 SERVICE_NAME=datadog-agent
 
 # If we are inside the Docker container, do nothing
@@ -67,7 +68,7 @@ fi
 # Set proper rights to the dd-agent user
 chown -R dd-agent:dd-agent ${CONFIG_DIR}
 chown -R dd-agent:dd-agent ${LOG_DIR}
-chown -R dd-agent:dd-agent ${INSTALL_DIR}
+chown -R dd-agent:dd-agent ${RUN_DIR}
 
 # Enable and restart the iot-agent service here on Debian platforms
 # On RHEL, this is done in the posttrans script

@@ -5,13 +5,13 @@
 #
 # .rpm: STEP 3 of 6
 
-INSTALL_DIR=/opt/datadog-dogstatsd
 LOG_DIR=/var/log/datadog
 CONFIG_DIR=/etc/datadog-dogstatsd
+RUN_DIR=/opt/datadog-agent/run
 
 # Set proper rights to the dd-agent user
 chown -R dd-agent:dd-agent ${CONFIG_DIR}
 chown -R dd-agent:dd-agent ${LOG_DIR}
-chown -R dd-agent:dd-agent ${INSTALL_DIR}
+chown -R dd-agent:dd-agent ${RUN_DIR}
 
 exit 0
