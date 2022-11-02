@@ -5,6 +5,7 @@
 default['datadog']['agent_start'] = true
 default['datadog']['agent_enable'] = true
 default['datadog']['agent_version'] = nil
+default['datadog']['security_agent']['cws']['enabled'] = true
 
 # All other options use the defaults set in the official cookbook,
 # or the options set in the kitchen job (eg. aptrepo, yumrepo, etc.)
