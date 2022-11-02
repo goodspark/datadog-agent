@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/fatih/color"
 	"github.com/hashicorp/go-multierror"
@@ -63,8 +64,13 @@ func Commands(globalParams *command.GlobalParams) []*cobra.Command {
 			return fxutil.OneShot(makeFlare,
 				fx.Supply(cliParams),
 				fx.Supply(core.BundleParams{
-					ConfFilePath:      globalParams.ConfFilePath,
 					ConfigLoadSecrets: true,
+					SecurityAgentConfigFilePaths: []string{
+						path.Join(common.DefaultConfPath, "security-agent.yaml"),
+					},
+					ConfigLoadSecurityAgent: true,
+					SysProbeConfFilePath:    globalParams.SysProbeConfFilePath,
+					ConfigLoadSysProbe:      true,
 				}.LogForOneShot("CORE", "off", false)),
 				core.Bundle,
 			)
@@ -131,10 +137,15 @@ func readProfileData(cliParams *cliParams, pdata *flare.ProfileData, seconds int
 		})
 	}
 
-	if pkgconfig.Datadog.GetBool("runtime_security_config.enabled") || pkgconfig.Datadog.GetBool("compliance_config.enabled") {
+	agentCollectors = append(agentCollectors, agentCollector{
+		name: "security-agent",
+		fn:   serviceProfileCollector("security-agent", "security_agent.expvar_port", seconds),
+	})
+
+	if debugPort := pkgconfig.Datadog.GetInt("system_probe_config.debug_port"); debugPort > 0 {
 		agentCollectors = append(agentCollectors, agentCollector{
-			name: "security-agent",
-			fn:   serviceProfileCollector("security-agent", "security_agent.expvar_port", seconds),
+			name: "system-probe",
+			fn:   serviceProfileCollector("system-probe", "system_probe_config.debug_port", seconds),
 		})
 	}
 
@@ -169,7 +180,6 @@ func makeFlare(log log.Component, config config.Component, cliParams *cliParams)
 
 	customerEmail := cliParams.customerEmail
 	if customerEmail == "" {
-		var err error
 		customerEmail, err = input.AskForEmail()
 		if err != nil {
 			fmt.Println("Error reading email, please retry or contact support")
