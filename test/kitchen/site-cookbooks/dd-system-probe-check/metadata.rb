@@ -6,4 +6,3 @@ version          "0.1.0"
 depends "yum-centos", "~> 5.0.0"
 
 depends 'docker'
-depends 'docker_compose', '~> 0.0'

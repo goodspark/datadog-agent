@@ -122,4 +122,16 @@ cookbook_file "/tmp/system-probe-tests/pkg/ebpf/bytecode/build/co-re/btf/minimiz
 end
 
 docker_installation 'default'
-include_recipe 'docker_compose::installation'
+docker_service 'default' do
+  action [:create, :start]
+end
+
+execute 'install docker-compose' do
+  user "root"
+  command <<-EOF
+    curl -SL https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-$(uname -s | awk '{print tolower($0)}')-$(uname -m) -o /usr/bin/docker-compose
+    chmod 0755 /usr/bin/docker-compose
+    docker-compose -h
+  EOF
+  live_stream true
+end

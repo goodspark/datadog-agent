@@ -96,7 +96,9 @@ func RunKafkaServers(t *testing.T, serverAddr string) {
 		"KAFKA_PORT=9092",
 	}
 	dir, _ := CurDir()
-	cmd := exec.Command("docker-compose", "-f", dir+"/docker-compose.yml", "up")
+	cmd := exec.Command("docker-compose", "-f", dir+"/testdata/docker-compose.yml", "up")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stdout
 	cmd.Env = append(cmd.Env, envs...)
 	go func() {
 		if err := cmd.Run(); err != nil {
@@ -105,7 +107,9 @@ func RunKafkaServers(t *testing.T, serverAddr string) {
 	}()
 
 	t.Cleanup(func() {
-		c := exec.Command("docker-compose", "-f", dir+"/docker-compose.yml", "down", "--remove-orphans")
+		c := exec.Command("docker-compose", "-f", dir+"/testdata/docker-compose.yml", "down", "--remove-orphans")
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stdout
 		c.Env = append(c.Env, envs...)
 		_ = c.Run()
 	})
