@@ -16,7 +16,7 @@ typedef __int64 LONG64;
 typedef unsigned char       uint8_t;
 
 // define a version signature so that the driver won't load out of date structures, etc.
-#define DD_NPMDRIVER_VERSION       0x14
+#define DD_NPMDRIVER_VERSION       0x15
 #define DD_NPMDRIVER_SIGNATURE     ((uint64_t)0xDDFD << 32 | DD_NPMDRIVER_VERSION)
 
 // for more information on defining control codes, see
@@ -89,12 +89,12 @@ typedef unsigned char       uint8_t;
 
 #define DDNPMDRIVER_IOCTL_GET_OPEN_FLOWS  CTL_CODE(FILE_DEVICE_NETWORK, \
                                               0x80D, \
-                                              METHOD_BUFFERED,\
+                                              METHOD_OUT_DIRECT,\
                                               FILE_ANY_ACCESS)
 
 #define DDNPMDRIVER_IOCTL_GET_CLOSED_FLOWS  CTL_CODE(FILE_DEVICE_NETWORK, \
                                               0x80E, \
-                                              METHOD_BUFFERED,\
+                                              METHOD_OUT_DIRECT,\
                                               FILE_ANY_ACCESS)
 
 #define DDNPMDRIVER_IOCTL_SET_CLOSED_FLOWS_NOTIFY  CTL_CODE(FILE_DEVICE_NETWORK, \

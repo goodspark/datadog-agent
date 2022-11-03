@@ -3,7 +3,7 @@
 
 package driver
 
-const Signature = 0xddfd00000014
+const Signature = 0xddfd00000015
 
 const (
 	GetStatsIOCTL             = 0x122004
@@ -15,6 +15,9 @@ const (
 	FlushPendingHttpTxnsIOCTL = 0x122020
 	EnableHttpIOCTL           = 0x122030
 	EnableClassifyIOCTL       = 0x122040
+	SetClosedFlowsLimitIOCTL  = 0x12203c
+	GetOpenFlowsIOCTL         = 0x122036
+	GetClosedFlowsIOCTL       = 0x12203a
 )
 
 type FilterAddress struct {
