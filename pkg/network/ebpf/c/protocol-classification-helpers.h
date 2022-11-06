@@ -244,6 +244,15 @@ static __always_inline void protocol_classifier_entrypoint(struct __sk_buff *skb
     inverse_skb_conn_tup.pid = 0;
     inverse_skb_conn_tup.netns = 0;
 
+    log_debug("[protocol_classifier_entrypoint]: sport %d skb_tup1 %llu %llu\n", skb_tup.sport, skb_tup.saddr_l, skb_tup.daddr_l);
+    log_debug("[protocol_classifier_entrypoint]: sport %d skb_tup2 %d %d\n", skb_tup.sport, skb_tup.sport);
+
+    log_debug("[protocol_classifier_entrypoint]: sport %d inverse_skb_conn_tup %llu %llu\n", inverse_skb_conn_tup.sport, inverse_skb_conn_tup.saddr_l, inverse_skb_conn_tup.daddr_l);
+    log_debug("[protocol_classifier_entrypoint]: sport %d inverse_skb_conn_tup %d %d\n", inverse_skb_conn_tup.sport, inverse_skb_conn_tup.sport);
+
+    log_debug("[protocol_classifier_entrypoint]: sport %d inverse_skb_conn_tup %llu %llu\n", inverse_skb_conn_tup.sport, inverse_skb_conn_tup.saddr_l, inverse_skb_conn_tup.daddr_l);
+    log_debug("[protocol_classifier_entrypoint]: sport %d inverse_skb_conn_tup %d %d\n", inverse_skb_conn_tup.sport, inverse_skb_conn_tup.sport);
+
     protocol_t sock_tup_protocol = get_cached_protocol_or_default(&cached_sock_conn_tup);
     protocol_t inverse_skb_tup_protocol = get_cached_protocol_or_default(&inverse_skb_conn_tup);
     protocol_t cur_fragment_protocol = choose_protocol(sock_tup_protocol, inverse_skb_tup_protocol);
@@ -254,20 +263,24 @@ static __always_inline void protocol_classifier_entrypoint(struct __sk_buff *skb
         bpf_memset(request_fragment, 0, sizeof(request_fragment));
         read_into_buffer_for_classification((char *)request_fragment, skb, &skb_info);
         classify_protocol(&cur_fragment_protocol, request_fragment, sizeof(request_fragment));
-        log_debug("[protocol_classifier_entrypoint]: Classifying protocol as: %d\n", cur_fragment_protocol);
+        log_debug("[protocol_classifier_entrypoint]: sport %d Classifying protocol as: %d\n", skb_tup.sport, cur_fragment_protocol);
     } else {
-        log_debug("[protocol_classifier_entrypoint]: protocol was already classified as: %d\n", cur_fragment_protocol);
+        log_debug("[protocol_classifier_entrypoint]: sport %d protocol was already classified as: %d\n", skb_tup.sport, cur_fragment_protocol);
     }
 
     // If there has been a change in the classification, save the new protocol.
-    if (sock_tup_protocol != cur_fragment_protocol) {
-        log_debug("[protocol_classifier_entrypoint]: Changing sock_tup_protocol (%d) to as: %d\n", sock_tup_protocol, cur_fragment_protocol);
-        bpf_map_update_with_telemetry(connection_protocol, &cached_sock_conn_tup, &cur_fragment_protocol, BPF_ANY);
+    sock_tup_protocol = get_cached_protocol_or_default(&cached_sock_conn_tup);
+    protocol_t final1 = choose_protocol(cur_fragment_protocol, sock_tup_protocol);
+    if (sock_tup_protocol != final1) {
+        log_debug("[protocol_classifier_entrypoint]: sport %d Changing sock_tup_protocol (%d) to as: %d\n", skb_tup.sport, sock_tup_protocol, final1);
+        bpf_map_update_with_telemetry(connection_protocol, &cached_sock_conn_tup, &final1, BPF_ANY);
     }
 
-    if (inverse_skb_tup_protocol != cur_fragment_protocol) {
-        log_debug("[protocol_classifier_entrypoint]: Changing inverse_skb_tup_protocol (%d) to as: %d\n", inverse_skb_tup_protocol, cur_fragment_protocol);
-        bpf_map_update_with_telemetry(connection_protocol, &inverse_skb_conn_tup, &cur_fragment_protocol, BPF_ANY);
+    inverse_skb_tup_protocol = get_cached_protocol_or_default(&inverse_skb_conn_tup);
+    protocol_t final2 = choose_protocol(cur_fragment_protocol, inverse_skb_tup_protocol);
+    if (inverse_skb_tup_protocol != final2) {
+        log_debug("[protocol_classifier_entrypoint]: sport %d Changing inverse_skb_tup_protocol (%d) to as: %d\n", skb_tup.sport, inverse_skb_tup_protocol, final2);
+        bpf_map_update_with_telemetry(connection_protocol, &inverse_skb_conn_tup, &final2, BPF_ANY);
     }
 }
 
