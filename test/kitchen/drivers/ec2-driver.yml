@@ -1,3 +1,9 @@
+lifecycle:
+  pre_create: echo -e "\e[0Ksection_start:`date +%s`:create_section[collapsed=true]\r\e[0Kchef kitchen create"
+  post_create: echo -e "\e[0Ksection_end:`date +%s`:create_section\r\e[0K"
+  pre_converge: echo -e "\e[0Ksection_start:`date +%s`:converge_section[collapsed=true]\r\e[0Kchef kitchen converge"
+  post_converge: echo -e "\e[0Ksection_end:`date +%s`:converge_section\r\e[0K"
+
 provisioner:
   name: chef_solo
   product_name: chef
