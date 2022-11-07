@@ -262,9 +262,6 @@ func waitForConnectionsWithProtocol(t *testing.T, tr *Tracer, targetAddr, server
 	foundOutgoingWithProtocol := PrintableBool(false)
 	require.Eventuallyf(t, func() bool {
 		conns := getConnections(t, tr)
-		for _, i := range conns.Conns {
-			fmt.Println(i)
-		}
 		newOutgoingConns := searchConnections(conns, func(cs network.ConnectionStats) bool {
 			return fmt.Sprintf("%s:%d", cs.Dest, cs.DPort) == targetAddr
 		})

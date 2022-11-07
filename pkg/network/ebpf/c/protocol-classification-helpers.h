@@ -238,6 +238,13 @@ static __always_inline void protocol_classifier_entrypoint(struct __sk_buff *skb
         return;
     }
 
+    protocol_t classified_protocol = PROTOCOL_UNCLASSIFIED;
+    char request_fragment[CLASSIFICATION_MAX_BUFFER];
+    bpf_memset(request_fragment, 0, sizeof(request_fragment));
+    read_into_buffer_for_classification((char *)request_fragment, skb, &skb_info);
+    classify_protocol(&classified_protocol, request_fragment, sizeof(request_fragment));
+    log_debug("[protocol_classifier_entrypoint]: sport %d Classifying protocol as: %d\n", skb_tup.sport, classified_protocol);
+
     conn_tuple_t cached_sock_conn_tup = *cached_sock_conn_tup_ptr;
     conn_tuple_t inverse_skb_conn_tup = {0};
     invert_conn_tuple(&skb_tup, &inverse_skb_conn_tup);
@@ -255,28 +262,17 @@ static __always_inline void protocol_classifier_entrypoint(struct __sk_buff *skb
 
     protocol_t sock_tup_protocol = get_cached_protocol_or_default(&cached_sock_conn_tup);
     protocol_t inverse_skb_tup_protocol = get_cached_protocol_or_default(&inverse_skb_conn_tup);
-    protocol_t cur_fragment_protocol = choose_protocol(sock_tup_protocol, inverse_skb_tup_protocol);
 
-    // If we've already identified the protocol of the socket, no need to read the buffer and try to classify it.
-    if (cur_fragment_protocol == PROTOCOL_UNCLASSIFIED || cur_fragment_protocol == PROTOCOL_UNKNOWN) {
-        char request_fragment[CLASSIFICATION_MAX_BUFFER];
-        bpf_memset(request_fragment, 0, sizeof(request_fragment));
-        read_into_buffer_for_classification((char *)request_fragment, skb, &skb_info);
-        classify_protocol(&cur_fragment_protocol, request_fragment, sizeof(request_fragment));
-        log_debug("[protocol_classifier_entrypoint]: sport %d Classifying protocol as: %d\n", skb_tup.sport, cur_fragment_protocol);
-    } else {
-        log_debug("[protocol_classifier_entrypoint]: sport %d protocol was already classified as: %d\n", skb_tup.sport, cur_fragment_protocol);
-    }
+    protocol_t cur_fragment_protocol = choose_protocol(inverse_skb_tup_protocol, classified_protocol);
+    cur_fragment_protocol = choose_protocol(sock_tup_protocol, cur_fragment_protocol);
 
     // If there has been a change in the classification, save the new protocol.
-    sock_tup_protocol = get_cached_protocol_or_default(&cached_sock_conn_tup);
-    if (sock_tup_protocol == PROTOCOL_UNCLASSIFIED || (sock_tup_protocol == PROTOCOL_UNKNOWN && cur_fragment_protocol != PROTOCOL_UNCLASSIFIED)) {
+    if (sock_tup_protocol != cur_fragment_protocol) {
         log_debug("[protocol_classifier_entrypoint]: sport %d Changing sock_tup_protocol (%d) to as: %d\n", skb_tup.sport, sock_tup_protocol, cur_fragment_protocol);
         bpf_map_update_with_telemetry(connection_protocol, &cached_sock_conn_tup, &cur_fragment_protocol, BPF_ANY);
     }
 
-    inverse_skb_tup_protocol = get_cached_protocol_or_default(&inverse_skb_conn_tup);
-    if (inverse_skb_tup_protocol == PROTOCOL_UNCLASSIFIED || (inverse_skb_tup_protocol == PROTOCOL_UNKNOWN && cur_fragment_protocol != PROTOCOL_UNCLASSIFIED)) {
+    if (inverse_skb_tup_protocol != cur_fragment_protocol) {
         log_debug("[protocol_classifier_entrypoint]: sport %d Changing inverse_skb_tup_protocol (%d) to as: %d\n", skb_tup.sport, inverse_skb_tup_protocol, cur_fragment_protocol);
         bpf_map_update_with_telemetry(connection_protocol, &inverse_skb_conn_tup, &cur_fragment_protocol, BPF_ANY);
     }
