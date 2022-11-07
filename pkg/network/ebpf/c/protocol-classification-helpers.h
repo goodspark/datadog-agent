@@ -270,17 +270,15 @@ static __always_inline void protocol_classifier_entrypoint(struct __sk_buff *skb
 
     // If there has been a change in the classification, save the new protocol.
     sock_tup_protocol = get_cached_protocol_or_default(&cached_sock_conn_tup);
-    protocol_t final1 = choose_protocol(cur_fragment_protocol, sock_tup_protocol);
-    if (sock_tup_protocol != final1) {
-        log_debug("[protocol_classifier_entrypoint]: sport %d Changing sock_tup_protocol (%d) to as: %d\n", skb_tup.sport, sock_tup_protocol, final1);
-        bpf_map_update_with_telemetry(connection_protocol, &cached_sock_conn_tup, &final1, BPF_ANY);
+    if (sock_tup_protocol == PROTOCOL_UNCLASSIFIED || (sock_tup_protocol == PROTOCOL_UNKNOWN && cur_fragment_protocol != PROTOCOL_UNCLASSIFIED)) {
+        log_debug("[protocol_classifier_entrypoint]: sport %d Changing sock_tup_protocol (%d) to as: %d\n", skb_tup.sport, sock_tup_protocol, cur_fragment_protocol);
+        bpf_map_update_with_telemetry(connection_protocol, &cached_sock_conn_tup, &cur_fragment_protocol, BPF_ANY);
     }
 
     inverse_skb_tup_protocol = get_cached_protocol_or_default(&inverse_skb_conn_tup);
-    protocol_t final2 = choose_protocol(cur_fragment_protocol, inverse_skb_tup_protocol);
-    if (inverse_skb_tup_protocol != final2) {
-        log_debug("[protocol_classifier_entrypoint]: sport %d Changing inverse_skb_tup_protocol (%d) to as: %d\n", skb_tup.sport, inverse_skb_tup_protocol, final2);
-        bpf_map_update_with_telemetry(connection_protocol, &inverse_skb_conn_tup, &final2, BPF_ANY);
+    if (inverse_skb_tup_protocol == PROTOCOL_UNCLASSIFIED || (inverse_skb_tup_protocol == PROTOCOL_UNKNOWN && cur_fragment_protocol != PROTOCOL_UNCLASSIFIED)) {
+        log_debug("[protocol_classifier_entrypoint]: sport %d Changing inverse_skb_tup_protocol (%d) to as: %d\n", skb_tup.sport, inverse_skb_tup_protocol, cur_fragment_protocol);
+        bpf_map_update_with_telemetry(connection_protocol, &inverse_skb_conn_tup, &cur_fragment_protocol, BPF_ANY);
     }
 }
 
