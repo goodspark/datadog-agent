@@ -79,6 +79,7 @@ type RuleDefinition struct {
 	Disabled               bool               `yaml:"disabled"`
 	Combine                CombinePolicy      `yaml:"combine"`
 	Actions                []ActionDefinition `yaml:"actions"`
+	Rate                   int                `yaml:"rate"`
 	Policy                 *Policy
 }
 
