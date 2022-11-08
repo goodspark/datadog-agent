@@ -153,8 +153,9 @@ func TestMountPropagated(t *testing.T) {
 	// - testroot
 	// 		/ dir1
 	// 			/ test-drive (xfs mount)
-	// 		/ dir-bind-mounted (bind mount de testroot/dir1)
+	// 		/ dir1-bind-mounted (bind mount of testroot/dir1)
 	// 			/ test-drive (propagated)
+	//				/ test-file
 
 	ruleDefs := []*rules.RuleDefinition{{
 		ID:         "test_rule",
@@ -182,7 +183,6 @@ func TestMountPropagated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer testDrive.cleanup()
 
 	dir1BindMntPath, _, err := test.Path("dir1-bind-mounted")
 	if err != nil {
@@ -191,6 +191,7 @@ func TestMountPropagated(t *testing.T) {
 	if err := os.MkdirAll(dir1BindMntPath, 0755); err != nil {
 		t.Fatal(err)
 	}
+	defer os.RemoveAll(dir1BindMntPath)
 
 	bindMnt := newTestMount(
 		dir1BindMntPath,
@@ -202,10 +203,7 @@ func TestMountPropagated(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		testPropagatedDrivePath := path.Join(dir1BindMntPath, "test-drive")
-		if err := syscall.Unmount(testPropagatedDrivePath, syscall.MNT_FORCE); err != nil {
-			t.Logf("Failed to unmount %s", testPropagatedDrivePath)
-		}
+		testDrive.Close()
 
 		if err := bindMnt.unmount(syscall.MNT_FORCE); err != nil {
 			t.Logf("Failed to umount %s", bindMnt.target)
@@ -216,6 +214,7 @@ func TestMountPropagated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer os.Remove(file)
 
 	if err := os.WriteFile(file, []byte{}, 0700); err != nil {
 		t.Fatal(err)
@@ -225,7 +224,6 @@ func TestMountPropagated(t *testing.T) {
 		test.WaitSignal(t, func() error {
 			return os.Chmod(file, 0700)
 		}, func(event *sprobe.Event, rule *rules.Rule) {
-			t.Log(event.Open.File.PathnameStr)
 			assert.Equal(t, "chmod", event.GetType(), "wrong event type")
 			assert.Equal(t, file, event.Chmod.File.PathnameStr, "wrong path")
 		})
