@@ -92,7 +92,7 @@ tags:
   - "mytag:foo"
 `)
 
-	err := chk.Configure(rawInstanceConfig, []byte(``), "test")
+	err := chk.Configure(1, rawInstanceConfig, []byte(``), "test")
 	assert.Nil(t, err)
 
 	sender := mocksender.NewMockSender(chk.ID()) // required to initiate aggregator
@@ -148,7 +148,7 @@ tags:
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.6.1",
 				Type:  gosnmp.OctetString,
-				Value: []byte{00, 00, 00, 00, 00, 01},
+				Value: []byte{0o0, 0o0, 0o0, 0o0, 0o0, 0o1},
 			},
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.7.1",
@@ -173,7 +173,7 @@ tags:
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.6.2",
 				Type:  gosnmp.OctetString,
-				Value: []byte{00, 00, 00, 00, 00, 02},
+				Value: []byte{0o0, 0o0, 0o0, 0o0, 0o0, 0o2},
 			},
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.7.2",
@@ -314,7 +314,7 @@ metrics:
     name: SomeCounter64Metric
 `)
 
-	err := chk.Configure(rawInstanceConfig, []byte(``), "test")
+	err := chk.Configure(1, rawInstanceConfig, []byte(``), "test")
 	assert.Nil(t, err)
 
 	sender := mocksender.NewMockSender(chk.ID()) // required to initiate aggregator
@@ -394,7 +394,7 @@ profiles:
     definition_file: f5-big-ip.yaml
 `)
 
-	err := chk.Configure(rawInstanceConfig, rawInitConfig, "test")
+	err := chk.Configure(1, rawInstanceConfig, rawInitConfig, "test")
 	assert.NoError(t, err)
 
 	sender := mocksender.NewMockSender(chk.ID()) // required to initiate aggregator
@@ -463,7 +463,7 @@ profiles:
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.6.1",
 				Type:  gosnmp.OctetString,
-				Value: []byte{00, 00, 00, 00, 00, 01},
+				Value: []byte{0o0, 0o0, 0o0, 0o0, 0o0, 0o1},
 			},
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.7.1",
@@ -498,7 +498,7 @@ profiles:
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.6.2",
 				Type:  gosnmp.OctetString,
-				Value: []byte{00, 00, 00, 00, 00, 02},
+				Value: []byte{0o0, 0o0, 0o0, 0o0, 0o0, 0o2},
 			},
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.7.2",
@@ -697,7 +697,7 @@ ip_address: 1.2.3.4
 community_string: public
 `)
 
-	err := chk.Configure(rawInstanceConfig, []byte(``), "test")
+	err := chk.Configure(1, rawInstanceConfig, []byte(``), "test")
 	assert.Nil(t, err)
 
 	sender := mocksender.NewMockSender(chk.ID()) // required to initiate aggregator
@@ -746,13 +746,13 @@ community_string: abc
 namespace: nsSubnet
 `)
 
-	err := check1.Configure(rawInstanceConfig1, []byte(``), "test")
+	err := check1.Configure(1, rawInstanceConfig1, []byte(``), "test")
 	assert.Nil(t, err)
-	err = check2.Configure(rawInstanceConfig2, []byte(``), "test")
+	err = check2.Configure(1, rawInstanceConfig2, []byte(``), "test")
 	assert.Nil(t, err)
-	err = check3.Configure(rawInstanceConfig3, []byte(``), "test")
+	err = check3.Configure(1, rawInstanceConfig3, []byte(``), "test")
 	assert.Nil(t, err)
-	err = checkSubnet.Configure(rawInstanceConfigSubnet, []byte(``), "test")
+	err = checkSubnet.Configure(1, rawInstanceConfigSubnet, []byte(``), "test")
 	assert.Nil(t, err)
 
 	assert.Equal(t, check.ID("snmp:default:1.1.1.1:a3ec59dfb03e4457"), check1.ID())
@@ -946,14 +946,13 @@ community_string: public
 namespace: '%s'
 `, tt.name))
 
-			err := chk.Configure(rawInstanceConfig, []byte(``), "test")
+			err := chk.Configure(1, rawInstanceConfig, []byte(``), "test")
 			assert.Nil(t, err)
 
 			sender := new(mocksender.MockSender)
 
 			if !tt.disableAggregator {
 				aggregator.InitAndStartAgentDemultiplexer(demuxOpts(), "")
-
 			}
 
 			mocksender.SetSender(sender, chk.ID())
@@ -1011,7 +1010,7 @@ metrics:
     name: myMetric
 `)
 
-	err = chk.Configure(rawInstanceConfig, []byte(``), "test")
+	err = chk.Configure(1, rawInstanceConfig, []byte(``), "test")
 	assert.Nil(t, err)
 
 	sender := mocksender.NewMockSender(chk.ID()) // required to initiate aggregator
@@ -1065,7 +1064,7 @@ tags:
 	// language=yaml
 	rawInitConfig := []byte(``)
 
-	err := chk.Configure(rawInstanceConfig, rawInitConfig, "test")
+	err := chk.Configure(1, rawInstanceConfig, rawInitConfig, "test")
 	assert.Nil(t, err)
 
 	sender := mocksender.NewMockSender(chk.ID()) // required to initiate aggregator
@@ -1110,7 +1109,7 @@ tags:
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.6.1",
 				Type:  gosnmp.OctetString,
-				Value: []byte{00, 00, 00, 00, 00, 01},
+				Value: []byte{0o0, 0o0, 0o0, 0o0, 0o0, 0o1},
 			},
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.7.1",
@@ -1140,7 +1139,7 @@ tags:
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.6.2",
 				Type:  gosnmp.OctetString,
-				Value: []byte{00, 00, 00, 00, 00, 02},
+				Value: []byte{0o0, 0o0, 0o0, 0o0, 0o0, 0o2},
 			},
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.7.2",
@@ -1309,7 +1308,7 @@ tags:
 	// language=yaml
 	rawInitConfig := []byte(``)
 
-	err := chk.Configure(rawInstanceConfig, rawInitConfig, "test")
+	err := chk.Configure(1, rawInstanceConfig, rawInitConfig, "test")
 	assert.Nil(t, err)
 
 	sender := mocksender.NewMockSender(chk.ID()) // required to initiate aggregator
@@ -1417,7 +1416,7 @@ metric_tags:
 	sess.On("GetNext", []string{"1.0"}).Return(&gosnmplib.MockValidReachableGetNextPacket, nil)
 	sess.On("Get", []string{"1.3.6.1.2.1.1.2.0"}).Return(&discoveryPacket, nil)
 
-	err := chk.Configure(rawInstanceConfig, []byte(``), "test")
+	err := chk.Configure(1, rawInstanceConfig, []byte(``), "test")
 	assert.Nil(t, err)
 
 	time.Sleep(100 * time.Millisecond)
@@ -1463,7 +1462,7 @@ metric_tags:
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.6.1",
 				Type:  gosnmp.OctetString,
-				Value: []byte{00, 00, 00, 00, 00, 01},
+				Value: []byte{0o0, 0o0, 0o0, 0o0, 0o0, 0o1},
 			},
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.7.1",
@@ -1493,7 +1492,7 @@ metric_tags:
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.6.2",
 				Type:  gosnmp.OctetString,
-				Value: []byte{00, 00, 00, 00, 00, 02},
+				Value: []byte{0o0, 0o0, 0o0, 0o0, 0o0, 0o2},
 			},
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.7.2",
@@ -1704,7 +1703,7 @@ metric_tags:
 	sess.On("GetNext", []string{"1.0"}).Return(&gosnmplib.MockValidReachableGetNextPacket, nil)
 	sess.On("Get", []string{"1.3.6.1.2.1.1.2.0"}).Return(&discoveryPacket, nil)
 
-	err = chk.Configure(rawInstanceConfig, []byte(``), "test")
+	err = chk.Configure(1, rawInstanceConfig, []byte(``), "test")
 	assert.Nil(t, err)
 
 	time.Sleep(100 * time.Millisecond)
@@ -1769,7 +1768,7 @@ metrics:
 use_device_id_as_hostname: true
 `)
 
-	err := chk.Configure(rawInstanceConfig, []byte(``), "test")
+	err := chk.Configure(1, rawInstanceConfig, []byte(``), "test")
 	assert.Nil(t, err)
 
 	sender := mocksender.NewMockSender(chk.ID()) // required to initiate aggregator
@@ -1809,7 +1808,7 @@ use_device_id_as_hostname: true
 				{
 					Name:  "1.3.6.1.2.1.2.2.1.6.1",
 					Type:  gosnmp.OctetString,
-					Value: []byte{00, 00, 00, 00, 00, 01},
+					Value: []byte{0o0, 0o0, 0o0, 0o0, 0o0, 0o1},
 				},
 				{
 					Name:  "1.3.6.1.2.1.2.2.1.7.1",
@@ -1949,7 +1948,7 @@ metrics:
 	}
 	sess.On("Get", []string{"1.3.6.1.2.1.1.2.0"}).Return(&discoveryPacket, nil)
 
-	err := chk.Configure(rawInstanceConfig, []byte(``), "test")
+	err := chk.Configure(1, rawInstanceConfig, []byte(``), "test")
 	assert.Nil(t, err)
 
 	time.Sleep(100 * time.Millisecond)
@@ -1994,7 +1993,7 @@ metrics:
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.6.1",
 				Type:  gosnmp.OctetString,
-				Value: []byte{00, 00, 00, 00, 00, 01},
+				Value: []byte{0o0, 0o0, 0o0, 0o0, 0o0, 0o1},
 			},
 			{
 				Name:  "1.3.6.1.2.1.2.2.1.7.1",

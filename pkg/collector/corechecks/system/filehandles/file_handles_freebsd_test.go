@@ -23,7 +23,7 @@ func TestFhCheckFreeBSD(t *testing.T) {
 	getInt64 = GetInt64
 
 	fileHandleCheck := new(fhCheck)
-	fileHandleCheck.Configure(nil, nil, "test")
+	fileHandleCheck.Configure(1, nil, nil, "test")
 
 	mock := mocksender.NewMockSender(fileHandleCheck.ID())
 

@@ -15,13 +15,11 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/aggregator/mocksender"
 )
 
-var (
-	avgSample = load.AvgStat{
-		Load1:  0.83,
-		Load5:  0.96,
-		Load15: 1.15,
-	}
-)
+var avgSample = load.AvgStat{
+	Load1:  0.83,
+	Load5:  0.96,
+	Load15: 1.15,
+}
 
 func Avg() (*load.AvgStat, error) {
 	return &avgSample, nil
@@ -31,7 +29,7 @@ func TestLoadCheckLinux(t *testing.T) {
 	loadAvg = Avg
 	cpuInfo = CPUInfo
 	loadCheck := new(LoadCheck)
-	loadCheck.Configure(nil, nil, "test")
+	loadCheck.Configure(1, nil, nil, "test")
 
 	mock := mocksender.NewMockSender(loadCheck.ID())
 

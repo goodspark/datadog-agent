@@ -107,7 +107,7 @@ func (c *Check) runCheckDevice(deviceCk *devicecheck.DeviceCheck) error {
 }
 
 // Configure configures the snmp checks
-func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integration.Data, source string) error {
+func (c *Check) Configure(integrationConfigDigest uint64, rawInstance integration.Data, rawInitConfig integration.Data, source string) error {
 	var err error
 
 	c.config, err = checkconfig.NewCheckConfig(rawInstance, rawInitConfig)
@@ -133,9 +133,9 @@ func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integratio
 	}
 
 	// Must be called before c.CommonConfigure
-	c.BuildID(rawInstance, rawInitConfig)
+	c.BuildID(integrationConfigDigest, rawInstance, rawInitConfig)
 
-	err = c.CommonConfigure(rawInitConfig, rawInstance, source)
+	err = c.CommonConfigure(integrationConfigDigest, rawInitConfig, rawInstance, source)
 	if err != nil {
 		return fmt.Errorf("common configure failed: %s", err)
 	}

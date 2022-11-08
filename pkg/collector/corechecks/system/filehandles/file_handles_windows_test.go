@@ -20,7 +20,7 @@ func TestFhCheckWindows(t *testing.T) {
 	pdhtest.SetQueryReturnValue("\\\\.\\Process(_Total)\\Handle Count", 0.006848775103963421)
 
 	fileHandleCheck := new(fhCheck)
-	fileHandleCheck.Configure(nil, nil, "test")
+	fileHandleCheck.Configure(1, nil, nil, "test")
 
 	mock := mocksender.NewMockSender(fileHandleCheck.ID())
 

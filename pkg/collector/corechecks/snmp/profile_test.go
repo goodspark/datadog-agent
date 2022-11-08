@@ -54,7 +54,7 @@ profiles:
     definition_file: f5-big-ip.yaml
 `)
 
-	err := chk.Configure(rawInstanceConfig, rawInitConfig, "test")
+	err := chk.Configure(1, rawInstanceConfig, rawInitConfig, "test")
 	assert.NoError(t, err)
 
 	sender := mocksender.NewMockSender(chk.ID()) // required to initiate aggregator

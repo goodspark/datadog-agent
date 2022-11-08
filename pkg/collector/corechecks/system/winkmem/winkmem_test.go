@@ -16,9 +16,8 @@ import (
 )
 
 func TestWinKMem(t *testing.T) {
-
 	kcheck := new(KMemCheck)
-	kcheck.Configure(nil, nil, "test")
+	kcheck.Configure(1, nil, nil, "test")
 
 	m := mocksender.NewMockSender(kcheck.ID())
 
