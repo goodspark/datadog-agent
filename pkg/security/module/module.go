@@ -29,6 +29,7 @@ import (
 	"github.com/DataDog/datadog-agent/cmd/system-probe/api/module"
 	sapi "github.com/DataDog/datadog-agent/pkg/security/api"
 	sconfig "github.com/DataDog/datadog-agent/pkg/security/config"
+	"github.com/DataDog/datadog-agent/pkg/security/events"
 	"github.com/DataDog/datadog-agent/pkg/security/metrics"
 	sprobe "github.com/DataDog/datadog-agent/pkg/security/probe"
 	"github.com/DataDog/datadog-agent/pkg/security/probe/selftests"
@@ -327,7 +328,7 @@ func (m *Module) newRuleOpts() (opts rules.Opts) {
 	opts.
 		WithSupportedDiscarders(sprobe.SupportedDiscarders).
 		WithEventTypeEnabled(m.getEventTypeEnabled()).
-		WithReservedRuleIDs(sprobe.AllCustomRuleIDs()).
+		WithReservedRuleIDs(events.AllCustomRuleIDs()).
 		WithLogger(seclog.DefaultLogger)
 	return
 }
@@ -432,7 +433,7 @@ func (m *Module) LoadPolicies(policyProviders []rules.PolicyProvider, sendLoaded
 	// full list of IDs, user rules + custom
 	var ruleIDs []rules.RuleID
 	ruleIDs = append(ruleIDs, ruleSet.ListRuleIDs()...)
-	ruleIDs = append(ruleIDs, sprobe.AllCustomRuleIDs()...)
+	ruleIDs = append(ruleIDs, events.AllCustomRuleIDs()...)
 
 	m.apiServer.Apply(ruleIDs)
 	m.rateLimiter.Apply(ruleIDs)
@@ -440,10 +441,7 @@ func (m *Module) LoadPolicies(policyProviders []rules.PolicyProvider, sendLoaded
 	m.displayReport(report)
 
 	if sendLoadedReport {
-		// report that a new policy was loaded
-		monitor := m.probe.GetMonitor()
-		monitor.ReportRuleSetLoaded(ruleSet, loadApproversErrs)
-
+		ReportRuleSetLoaded(m, m.statsdClient, ruleSet, loadApproversErrs)
 		m.policyMonitor.AddPolicies(ruleSet.GetPolicies(), loadApproversErrs)
 	}
 
@@ -509,7 +507,7 @@ func (m *Module) HandleEvent(event *sprobe.Event) {
 }
 
 // HandleCustomEvent is called by the probe when an event should be sent to Datadog but doesn't need evaluation
-func (m *Module) HandleCustomEvent(rule *rules.Rule, event *sprobe.CustomEvent) {
+func (m *Module) HandleCustomEvent(rule *rules.Rule, event *events.CustomEvent) {
 	m.eventSender.SendEvent(rule, event, func() []string { return nil }, "")
 }
 
