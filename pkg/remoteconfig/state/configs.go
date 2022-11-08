@@ -35,6 +35,8 @@ const (
 	ProductASMFeatures = "ASM_FEATURES"
 	// ProductASMDD is the application security monitoring product managed by datadog employees
 	ProductASMDD = "ASM_DD"
+	// ProductAPMInjection is an APM product used to inject APM libraries into application environments
+	ProductAPMInjection = "APM_INJECTION"
 )
 
 // ErrNoConfigVersion occurs when a target file's custom meta is missing the config version
@@ -52,6 +54,8 @@ func parseConfig(product string, raw []byte, metadata Metadata) (interface{}, er
 		c, err = parseConfigCWSDD(raw, metadata)
 	case ProductASMDD:
 		c, err = parseConfigASMDD(raw, metadata)
+	case ProductAPMInjection:
+		c, err = parseConfigAPMInjection(raw, metadata)
 	default:
 		return nil, fmt.Errorf("unknown product - %s", product)
 	}
@@ -208,6 +212,20 @@ func (r *Repository) ASMFeaturesConfigs() map[string]ASMFeaturesConfig {
 	}
 
 	return typedConfigs
+}
+
+type ConfigAPMInjection struct {
+	Config   []byte
+	Metadata Metadata
+}
+
+func parseConfigAPMInjection(data []byte, metadata Metadata) (ASMFeaturesConfig, error) {
+	// TODO
+}
+
+// ASMFeaturesConfigs returns the currently active ASMFeatures configs
+func (r *Repository) APMInjectionConfigs() map[string]ASMFeaturesConfig {
+	// TODO
 }
 
 // ApplyState represents the status of a configuration application by a remote configuration client

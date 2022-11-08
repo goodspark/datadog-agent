@@ -15,6 +15,8 @@ const (
 	ProductCWSDD Product = "CWS_DD"
 	// ProductTesting1 is a testing product
 	ProductTesting1 Product = "TESTING1"
+
+	ProductAPMInjection Product = "APM_INJECTION"
 )
 
 // ProductListToString converts a product list to string list

@@ -57,8 +57,9 @@ type Client struct {
 	grpc pbgo.AgentSecureClient
 
 	// Listeners
-	apmListeners []func(update map[string]state.APMSamplingConfig)
-	cwsListeners []func(update map[string]state.ConfigCWSDD)
+	apmListeners          []func(update map[string]state.APMSamplingConfig)
+	cwsListeners          []func(update map[string]state.ConfigCWSDD)
+	apmInjectionListeners []func(update map[string]state.ConfigAPMInjection)
 }
 
 // NewClient creates a new client
@@ -211,6 +212,12 @@ func (c *Client) update() error {
 			listener(c.state.CWSDDConfigs())
 		}
 	}
+	if containsProduct(changedProducts, state.ProductAPMInjection) {
+		// TODO
+		for _, listener := range c.cwsListeners {
+			listener(c.state.CWSDDConfigs())
+		}
+	}
 
 	return nil
 }
@@ -236,11 +243,19 @@ func (c *Client) RegisterAPMUpdate(fn func(update map[string]state.APMSamplingCo
 
 // RegisterCWSDDUpdate registers a callback function to be called after a successful client update that will
 // contain the current state of the CWSDD product.
-func (c *Client) RegisterCWSDDUpdate(fn func(update map[string]state.ConfigCWSDD)) {
+func (c *Client) RegisterCWSDDUpdate(fn func(update map[string]state.ConfigAPMInjection)) {
 	c.m.Lock()
 	defer c.m.Unlock()
 	c.cwsListeners = append(c.cwsListeners, fn)
 	fn(c.state.CWSDDConfigs())
+}
+
+// RegisterAPMInjectionUpdate registers TODO
+func (c *Client) RegisterAPMInjectionUpdate(fn func(update map[string]state.ConfigAPMInjection)) {
+	c.m.Lock()
+	defer c.m.Unlock()
+	c.apmInjectionListeners = append(c.apmInjectionListeners, fn)
+	fn(c.state.APMInjectionConfigs())
 }
 
 func (c *Client) applyUpdate(pbUpdate *pbgo.ClientGetConfigsResponse) ([]string, error) {

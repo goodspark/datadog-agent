@@ -9,17 +9,34 @@
 package patch
 
 import (
+	"github.com/DataDog/datadog-agent/pkg/config/remote/data"
+	"github.com/DataDog/datadog-agent/pkg/version"
 	"os"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/config/remote"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+)
 
-	"gopkg.in/yaml.v2"
+const (
+	rcClientName = "apm-cluster-agent"
+)
+
+const (
+	// arbitrary
+	rcClientPollInterval = 15 * time.Second
 )
 
 type requestProvider interface {
 	start(stopCh <-chan struct{})
 	subscribe(kind string) chan patchRequest
+}
+
+type remoteConfigProvider struct {
+	client                remote.Client
+	isLeaderFunc          func() bool
+	subscribers           map[string]chan patchRequest
+	lastSuccessfulRefresh time.Time
 }
 
 type fileRequestProvider struct {
@@ -41,6 +58,21 @@ func newFileRequestProvider(isLeaderFunc func() bool) *fileRequestProvider {
 	return &fileRequestProvider{
 		file:         "/etc/datadog-agent/auto-instru.yaml",
 		pollInterval: 15 * time.Second,
+		isLeaderFunc: isLeaderFunc,
+		subscribers:  make(map[string]chan patchRequest),
+	}
+}
+
+func newRemoteConfigProvider(isLeaderFunc func() bool) *fileRequestProvider {
+
+	client, err := remote.NewClient(rcClientName, version.AgentVersion, []data.Product{
+		data.ProductAPMInjection,
+	}, rcClientPollInterval)
+	if err != nil {
+		log.Errorf("Error when subscribing to remote config management %v", err)
+	}
+	return &remoteConfigProvider{
+		client,
 		isLeaderFunc: isLeaderFunc,
 		subscribers:  make(map[string]chan patchRequest),
 	}
@@ -84,6 +116,15 @@ func (frp *fileRequestProvider) refresh() error {
 		}
 	}
 	frp.lastSuccessfulRefresh = time.Now()
+	return nil
+}
+
+func (r *remoteConfigProvider) start(stopCh <-chan struct{}) {
+	r.client.RegisterAPMInjectionUpdate(r.refresh)
+	r.client.Start()
+}
+
+func (r *remoteConfigProvider) refresh() error {
 	return nil
 }
 
