@@ -15,7 +15,6 @@ provisioner:
   wait_for_retry: 90
   client_rb:
     client_fork: false
-    chef_license: accept
 
 platforms:
 <%
