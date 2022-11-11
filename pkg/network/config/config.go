@@ -6,6 +6,7 @@
 package config
 
 import (
+	"runtime"
 	"strings"
 	"time"
 
@@ -269,6 +270,14 @@ func New() *Config {
 		HTTPIdleConnectionTTL:  time.Duration(cfg.GetInt(join(spNS, "http_idle_connection_ttl_in_s"))) * time.Second,
 	}
 
+	if runtime.GOOS == "windows" {
+		if cfg.IsSet(join(spNS, "closed_connection_flush_threshold")) && c.ClosedConnectionFlushThreshold < 1024 {
+			log.Warnf("Closed connection notification threshold set to invalid value %d.  Resetting to default.", c.ClosedConnectionFlushThreshold)
+
+			// 0 will allow the underlying driver interface mechanism to choose appropriately
+			c.ClosedConnectionFlushThreshold = 0
+		}
+	}
 	if !cfg.IsSet(join(spNS, "max_closed_connections_buffered")) {
 		// make sure max_closed_connections_buffered is equal to
 		// max_tracked_connections, since the former is not set.
