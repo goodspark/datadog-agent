@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/DataDog/datadog-agent/pkg/telemetry"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 	manager "github.com/DataDog/ebpf-manager"
 	"github.com/cilium/ebpf"
@@ -36,17 +37,19 @@ var helperNames = map[int]string{readIndx: "bpf_probe_read", readUserIndx: "bpf_
 // EBPFTelemetry struct contains all the maps that
 // are registered to have their telemetry collected.
 type EBPFTelemetry struct {
-	MapErrMap    *ebpf.Map
-	HelperErrMap *ebpf.Map
-	mapKeys      map[string]uint64
-	probeKeys    map[string]uint64
+	MapErrMap         *ebpf.Map
+	HelperErrMap      *ebpf.Map
+	mapKeys           map[string]uint64
+	probeKeys         map[string]uint64
+	prometheusMetrics map[string]telemetry.Gauge
 }
 
 // NewEBPFTelemetry initializes a new EBPFTelemetry object
 func NewEBPFTelemetry() *EBPFTelemetry {
 	return &EBPFTelemetry{
-		mapKeys:   make(map[string]uint64),
-		probeKeys: make(map[string]uint64),
+		mapKeys:           make(map[string]uint64),
+		probeKeys:         make(map[string]uint64),
+		prometheusMetrics: make(map[string]telemetry.Gauge),
 	}
 }
 
@@ -83,6 +86,10 @@ func (b *EBPFTelemetry) GetMapsTelemetry() map[string]interface{} {
 		}
 		if count := getMapErrCount(&val); len(count) > 0 {
 			t[m] = count
+			promGauge := b.prometheusMetrics[m]
+			for errStr, errCount := range count {
+				promGauge.Set(float64(errCount), errStr)
+			}
 		}
 	}
 
@@ -104,7 +111,9 @@ func (b *EBPFTelemetry) GetHelperTelemetry() map[string]interface{} {
 			log.Debugf("failed to get telemetry for map:key %s:%d\n", m, k)
 			continue
 		}
-		if t := getHelperTelemetry(&val); len(t) > 0 {
+
+		promGauge := b.prometheusMetrics[m]
+		if t := getHelperTelemetry(&val, promGauge); len(t) > 0 {
 			helperTelemMap[m] = t
 		}
 	}
@@ -112,12 +121,16 @@ func (b *EBPFTelemetry) GetHelperTelemetry() map[string]interface{} {
 	return helperTelemMap
 }
 
-func getHelperTelemetry(v *HelperErrTelemetry) map[string]interface{} {
+func getHelperTelemetry(v *HelperErrTelemetry, gauge telemetry.Gauge) map[string]interface{} {
 	helper := make(map[string]interface{})
 
 	for indx, name := range helperNames {
 		if count := getErrCount(v, indx); len(count) > 0 {
 			helper[name] = count
+
+			for errStr, errCount := range count {
+				gauge.Set(float64(errCount), name, errStr)
+			}
 		}
 	}
 
@@ -198,11 +211,35 @@ func buildHelperErrTelemetryKeys(mgr *manager.Manager) []manager.ConstantEditor 
 	return keys
 }
 
+//func getErrStrTags() []string {
+//	var tags []string
+//	var tagStr string
+//	for i := 1; i < maxErrno+1; i++ {
+//		if i == maxErrno {
+//			tagStr = maxErrnoStr
+//		} else {
+//			tagStr = syscall.Errno(i).Error()
+//		}
+//
+//		tagStr = strings.ReplaceAll(tagStr, " ", "_")
+//		tagStr = strings.ReplaceAll(tagStr, "/", "_")
+//		tags = append(tags)
+//	}
+//
+//	return tags
+//}
+
 func (b *EBPFTelemetry) initializeMapErrTelemetryMap(maps []*manager.Map) error {
 	z := new(MapErrTelemetry)
 	h := fnv.New64a()
 
 	for _, m := range maps {
+		// Some maps, such as the telemetry maps, are
+		// redefined in multiple programs.
+		if _, ok := b.mapKeys[m.Name]; ok {
+			continue
+		}
+
 		h.Write([]byte(m.Name))
 		key := h.Sum64()
 		err := b.MapErrMap.Put(unsafe.Pointer(&key), unsafe.Pointer(z))
@@ -212,6 +249,8 @@ func (b *EBPFTelemetry) initializeMapErrTelemetryMap(maps []*manager.Map) error 
 		h.Reset()
 
 		b.mapKeys[m.Name] = key
+
+		b.prometheusMetrics[m.Name] = telemetry.NewGauge("map_ops", m.Name, []string{"error"}, "Failures of map operations for a specific ebpf map reported per error.")
 	}
 
 	return nil
@@ -222,6 +261,12 @@ func (b *EBPFTelemetry) initializeHelperErrTelemetryMap(probes []*manager.Probe)
 	h := fnv.New64a()
 
 	for _, p := range probes {
+		// Some hook points, like tcp_sendmsg, are probed in
+		// multiple different programs.
+		if _, ok := b.probeKeys[p.EBPFFuncName]; ok {
+			continue
+		}
+
 		h.Write([]byte(p.EBPFFuncName))
 		key := h.Sum64()
 		err := b.HelperErrMap.Put(unsafe.Pointer(&key), unsafe.Pointer(z))
@@ -231,6 +276,7 @@ func (b *EBPFTelemetry) initializeHelperErrTelemetryMap(probes []*manager.Probe)
 		h.Reset()
 
 		b.probeKeys[p.EBPFFuncName] = key
+		b.prometheusMetrics[p.EBPFFuncName] = telemetry.NewGauge("ebpf_helpers", p.EBPFFuncName, []string{"helper", "error"}, "Failures of bpf helper operations reported per helper per error for each probe.")
 	}
 
 	return nil
