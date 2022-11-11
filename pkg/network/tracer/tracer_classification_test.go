@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"net"
 	nethttp "net/http"
+	"runtime"
 	"testing"
 	"time"
 
@@ -26,6 +27,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func pullTestDockers(t *testing.T) {
+	if runtime.GOOS == "linux" {
+		kafka.PullKafkaDockers(t)
+	}
+}
+
 func testProtocolClassification(t *testing.T, cfg *config.Config, clientHost, targetHost, serverHost string) {
 	dialer := &net.Dialer{
 		LocalAddr: &net.TCPAddr{
@@ -34,11 +41,14 @@ func testProtocolClassification(t *testing.T, cfg *config.Config, clientHost, ta
 		},
 	}
 
+	pullTestDockers(t)
+
 	tests := []struct {
-		name      string
-		clientRun func(t *testing.T, serverAddr string)
-		serverRun func(t *testing.T, serverAddr string, done chan struct{}) string
-		want      network.ProtocolType
+		name       string
+		clientRun  func(t *testing.T, serverAddr string)
+		serverRun  func(t *testing.T, serverAddr string, done chan struct{}) string
+		shouldSkip func() bool
+		want       network.ProtocolType
 	}{
 		{
 			name: "udp client",
@@ -236,10 +246,16 @@ func testProtocolClassification(t *testing.T, cfg *config.Config, clientHost, ta
 				kafka.RunKafkaServers(t, serverHost)
 				return fmt.Sprintf("%s:9092", serverHost)
 			},
+			shouldSkip: func() bool {
+				return runtime.GOOS != "linux"
+			},
 			want: network.ProtocolKafka,
 		},
 	}
 	for _, tt := range tests {
+		if tt.shouldSkip != nil && tt.shouldSkip() {
+			continue
+		}
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := NewTracer(cfg)
 			if err != nil {
