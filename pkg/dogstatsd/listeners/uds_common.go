@@ -46,13 +46,14 @@ type UDSListener struct {
 	sharedPacketPoolManager *packets.PoolManager
 	oobPoolManager          *packets.PoolManager
 	trafficCapture          *replay.TrafficCapture
+	originTracker           *OriginTracker
 	OriginDetection         bool
 
 	dogstatsdMemBasedRateLimiter bool
 }
 
 // NewUDSListener returns an idle UDS Statsd listener
-func NewUDSListener(packetOut chan packets.Packets, sharedPacketPoolManager *packets.PoolManager, capture *replay.TrafficCapture) (*UDSListener, error) {
+func NewUDSListener(packetOut chan packets.Packets, sharedPacketPoolManager *packets.PoolManager, capture *replay.TrafficCapture, originTracker *OriginTracker) (*UDSListener, error) {
 	socketPath := config.Datadog.GetString("dogstatsd_socket")
 	originDetection := config.Datadog.GetBool("dogstatsd_origin_detection")
 
@@ -106,6 +107,7 @@ func NewUDSListener(packetOut chan packets.Packets, sharedPacketPoolManager *pac
 			config.Datadog.GetDuration("dogstatsd_packet_buffer_flush_timeout"), packetOut),
 		sharedPacketPoolManager:      sharedPacketPoolManager,
 		trafficCapture:               capture,
+		originTracker:                originTracker,
 		dogstatsdMemBasedRateLimiter: config.Datadog.GetBool("dogstatsd_mem_based_rate_limiter.enabled"),
 	}
 
@@ -217,6 +219,17 @@ func (l *UDSListener) Listen() {
 					capBuff.ContainerID = container
 				}
 			}
+
+			// origin tracking
+			// TODO(remy): feature flag?
+			if l.originTracker != nil {
+				l.originTracker.ch <- OriginTrackingEntry{
+					Origin:     packet.Origin,
+					BytesCount: uint(n),
+					TagsCount:  countCommas(packet.Buffer[:n]),
+				}
+			}
+
 			// Return the buffer back to the pool for reuse
 			l.oobPoolManager.Put(oob)
 		} else {

@@ -259,9 +259,12 @@ func NewServer(demultiplexer aggregator.Demultiplexer, serverless bool) (*Server
 
 	udsListenerRunning := false
 
+	// origin tracking
+	originTracker := listeners.StartOriginTracker()
+
 	socketPath := config.Datadog.GetString("dogstatsd_socket")
 	if len(socketPath) > 0 {
-		unixListener, err := listeners.NewUDSListener(packetsChannel, sharedPacketPoolManager, capture)
+		unixListener, err := listeners.NewUDSListener(packetsChannel, sharedPacketPoolManager, capture, originTracker)
 		if err != nil {
 			log.Errorf(err.Error())
 		} else {
@@ -661,10 +664,11 @@ func (s *Server) createOriginTagMaps(origin string) (okCnt telemetry.SimpleCount
 }
 
 // NOTE(remy): for performance purpose, we may need to revisit this method to deal with both a metricSamples slice and a lateMetricSamples
-//             slice, in order to not having to test multiple times if a metric sample is a late one using the Timestamp attribute,
-//             which will be slower when processing millions of samples. It could use a boolean returned by `parseMetricSample` which
-//             is the first part aware of processing a late metric. Also, it may help us having a telemetry of a "late_metrics" type here
-//             which we can't do today.
+//
+//	slice, in order to not having to test multiple times if a metric sample is a late one using the Timestamp attribute,
+//	which will be slower when processing millions of samples. It could use a boolean returned by `parseMetricSample` which
+//	is the first part aware of processing a late metric. Also, it may help us having a telemetry of a "late_metrics" type here
+//	which we can't do today.
 func (s *Server) parseMetricMessage(metricSamples []metrics.MetricSample, parser *parser, message []byte, origin string, telemetry bool) ([]metrics.MetricSample, error) {
 	okCnt := tlmProcessedOk
 	errorCnt := tlmProcessedError
