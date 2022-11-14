@@ -30,7 +30,7 @@ static __always_inline bool is_http2(const char* buf, __u32 buf_size) {
 #define HTTP2_SIGNATURE "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 
     bool match = !bpf_memcmp(buf, HTTP2_SIGNATURE, sizeof(HTTP2_SIGNATURE)-1);
-    
+
     return match;
 }
 
@@ -43,7 +43,7 @@ static __always_inline bool is_http(const char *buf, __u32 size) {
 #define GET "GET /"
 #define POST "POST /"
 #define PUT "PUT /"
-#define DELETE "DELETE /" 
+#define DELETE "DELETE /"
 #define HEAD "HEAD /"
 #define OPTIONS1 "OPTIONS /"
 #define OPTIONS2 "OPTIONS *"
@@ -68,7 +68,7 @@ static __always_inline bool is_http(const char *buf, __u32 size) {
 // Determines the protocols of the given buffer. If we already classified the payload (a.k.a protocol out param
 // has a known protocol), then we do nothing.
 static __always_inline void classify_protocol(protocol_t *protocol, const char *buf, __u32 size) {
-    if (protocol == NULL || (*protocol != PROTOCOL_UNKNOWN && *protocol != PROTOCOL_UNCLASSIFIED)) {
+    if (protocol == NULL || *protocol != PROTOCOL_UNKNOWN) {
         return;
     }
 
@@ -179,7 +179,7 @@ static __always_inline protocol_t get_cached_protocol_or_default(conn_tuple_t *t
         return *cached_protocol_ptr;
     }
 
-    return PROTOCOL_UNCLASSIFIED;
+    return PROTOCOL_UNKNOWN;
 }
 
 // Given protocols for the socket connection tuple, and the inverse skb connection tuple, the function returns
@@ -192,8 +192,7 @@ static __always_inline protocol_t get_cached_protocol_or_default(conn_tuple_t *t
 // then for sure we should choose it.
 // On any other case take sock_tup_protocol.
 static __always_inline protocol_t choose_protocol(protocol_t sock_tup_protocol, protocol_t inverse_skb_tup_protocol) {
-    if ((sock_tup_protocol == PROTOCOL_UNCLASSIFIED) ||
-        (sock_tup_protocol == PROTOCOL_UNKNOWN && inverse_skb_tup_protocol != PROTOCOL_UNCLASSIFIED)) {
+    if (sock_tup_protocol == PROTOCOL_UNKNOWN) {
         return inverse_skb_tup_protocol;
     }
 
@@ -251,7 +250,7 @@ static __always_inline void protocol_classifier_entrypoint(struct __sk_buff *skb
     protocol_t cur_fragment_protocol = choose_protocol(sock_tup_protocol, inverse_skb_tup_protocol);
 
     // If we've already identified the protocol of the socket, no need to read the buffer and try to classify it.
-    if (cur_fragment_protocol == PROTOCOL_UNCLASSIFIED || cur_fragment_protocol == PROTOCOL_UNKNOWN) {
+    if (cur_fragment_protocol == PROTOCOL_UNKNOWN) {
         char request_fragment[CLASSIFICATION_MAX_BUFFER];
         bpf_memset(request_fragment, 0, sizeof(request_fragment));
         read_into_buffer_for_classification((char *)request_fragment, skb, &skb_info);
@@ -260,11 +259,9 @@ static __always_inline void protocol_classifier_entrypoint(struct __sk_buff *skb
 
     log_debug("[protocol_classifier_entrypoint]: Classifying protocol as: %d\n", cur_fragment_protocol);
     // If there has been a change in the classification, save the new protocol.
-    if (sock_tup_protocol != cur_fragment_protocol) {
-        bpf_map_update_with_telemetry(connection_protocol, &cached_sock_conn_tup, &cur_fragment_protocol, BPF_ANY);
-    }
-    if (inverse_skb_tup_protocol != cur_fragment_protocol) {
-        bpf_map_update_with_telemetry(connection_protocol, &inverse_skb_conn_tup, &cur_fragment_protocol, BPF_ANY);
+    if (cur_fragment_protocol != PROTOCOL_UNKNOWN) {
+        bpf_map_update_with_telemetry(connection_protocol, &cached_sock_conn_tup, &cur_fragment_protocol, BPF_NOEXIST);
+        bpf_map_update_with_telemetry(connection_protocol, &inverse_skb_conn_tup, &cur_fragment_protocol, BPF_NOEXIST);
     }
 }
 

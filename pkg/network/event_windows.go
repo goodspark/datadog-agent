@@ -160,7 +160,7 @@ func FlowToConnStat(cs *ConnectionStats, flow *driver.PerFlowData, enableMonoton
 			}
 
 		} else if flow.ClassificationStatus == driver.ClassificationUnclassified {
-			cs.Protocol = ProtocolUnclassified
+			cs.Protocol = ProtocolUnknown
 		} else {
 			// one of
 			// ClassificationUnableInsufficientData, ClassificationUnknown
