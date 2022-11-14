@@ -1718,15 +1718,20 @@ func (tm *testModule) dockerCreateFiles(dockerInstance *dockerCmdWrapper, syscal
 }
 
 //nolint:deadcode,unused
-func (tm *testModule) findNextPartialDump(id *activityDumpIdentifier) *activityDumpIdentifier {
-	for i := 0; i < 5; i++ { // retry during 5sec
+func (tm *testModule) findNextPartialDump(dockerInstance *dockerCmdWrapper, id *activityDumpIdentifier) (*activityDumpIdentifier, error) {
+	for i := 0; i < 10; i++ { // retry during 5sec
 		dump := tm.findCgroupDump(id)
 		if dump != nil {
-			return dump
+			return dump, nil
+		}
+		cmd := dockerInstance.Command("echo", []string{"trying to trigger the dump"}, []string{})
+		_, err := cmd.CombinedOutput()
+		if err != nil {
+			return nil, err
 		}
 		time.Sleep(time.Second * 1)
 	}
-	return nil
+	return nil, errors.New("Unable to find the next partial dump")
 }
 
 //nolint:deadcode,unused

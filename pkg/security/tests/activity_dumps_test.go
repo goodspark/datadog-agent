@@ -444,9 +444,9 @@ func TestActivityDumpsLoadControllerTimeout(t *testing.T) {
 	}
 
 	// find the new dump, with timeout *= 3/4, or min timeout
-	secondDump := test.findNextPartialDump(dump)
-	if secondDump == nil {
-		t.Fatal("Did not find the next partial dump")
+	secondDump, err := test.findNextPartialDump(dockerInstance, dump)
+	if err != nil {
+		t.Fatal(err)
 	}
 	assert.Equal(t, "10m0s", secondDump.Timeout)
 }
@@ -507,9 +507,9 @@ func TestActivityDumpsLoadControllerEventTypes(t *testing.T) {
 			t.Skipf("Didn't manage to trigger reduceTracedEventTypes(), it took %v to trigger the next partial dump", timeDiff)
 		}
 		// find the new dump
-		nextDump := test.findNextPartialDump(dump)
-		if nextDump == nil {
-			t.Fatal("Did not find the next partial dump")
+		nextDump, err := test.findNextPartialDump(dockerInstance, dump)
+		if err != nil {
+			t.Fatal(err)
 		}
 
 		// extract all present event types present on the first dump
@@ -585,9 +585,9 @@ func TestActivityDumpsLoadControllerRateLimiter(t *testing.T) {
 	}
 	timeStart = timeStop
 	// find the new dump, with ratelimiter *= 3/4
-	secondDump := test.findNextPartialDump(dump)
-	if secondDump == nil {
-		t.Fatal("Did not find the next partial dump")
+	secondDump, err := test.findNextPartialDump(dockerInstance, dump)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	// find the number of files creation that were added to the dump
@@ -610,9 +610,9 @@ func TestActivityDumpsLoadControllerRateLimiter(t *testing.T) {
 		t.Skipf("Didn't manage to trigger reduceDumpRate(), it took %v to trigger the next partial dump", timeDiff)
 	}
 	// find the new dump, with ratelimiter *= 3/4
-	secondDump = test.findNextPartialDump(dump)
-	if secondDump == nil {
-		t.Fatal("Did not find the next partial dump")
+	_, err = test.findNextPartialDump(dockerInstance, dump)
+	if err != nil {
+		t.Fatal(err)
 	}
 	// find the number of files creation that were added to the dump
 	numberOfFiles, err = test.findNumberOfExistingDirectoryFiles(dump, testDir)
