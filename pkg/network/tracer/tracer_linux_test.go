@@ -1724,14 +1724,8 @@ func TestBlockingReadCounts(t *testing.T) {
 }
 
 // GoTLS test
-
-// Test that we can capture HTTPS traffic from Go processes started after the
-// tracer.
-func TestHTTPGoTLSCaptureNewProcess(t *testing.T) {
-	const (
-		ServerAddr          = "localhost:8081"
-		ExpectedOccurrences = 10
-	)
+func TestHTTPGoTLSAttachProbes(t *testing.T) {
+	clientBin := buildGoTLSClientBin(t)
 
 	if !goTLSSupported() {
 		t.Skip("GoTLS support not available on non amd64 architectures")
@@ -1745,44 +1739,122 @@ func TestHTTPGoTLSCaptureNewProcess(t *testing.T) {
 		t.Skip("HTTPS feature not available supported for this setup")
 	}
 
-	// Setup
-	closeServer := httptest.HTTPServer(t, ServerAddr, httptest.Options{
-		EnableTLS: true,
-	})
-	defer closeServer()
+	t.Run("New Process", testHTTPGoTLSCaptureNewProcess(clientBin))
+	t.Run("Already running process", testHTTPGoTLSCaptureAlreadyRunning(clientBin))
+}
 
-	cfg := config.New()
-	cfg.EnableRuntimeCompiler = true
-	cfg.EnableHTTPMonitoring = true
-	cfg.EnableHTTPSMonitoring = true
+func testHTTPGoTLSCaptureNewProcess(clientBin string) func(t *testing.T) {
+	return func(t *testing.T) {
+		const (
+			ServerAddr          = "localhost:8081"
+			ExpectedOccurrences = 10
+		)
 
-	tr, err := NewTracer(cfg)
-	require.NoError(t, err)
-	defer tr.Stop()
-	require.NoError(t, tr.RegisterClient("1"))
+		// Setup
+		closeServer := httptest.HTTPServer(t, ServerAddr, httptest.Options{
+			EnableTLS: true,
+		})
+		defer closeServer()
 
-	// This maps will keep track of whether or not the tracer saw this request already or not
-	reqs := make(requestsMap)
-	for i := 0; i < ExpectedOccurrences; i++ {
-		req, err := nethttp.NewRequest(nethttp.MethodGet, fmt.Sprintf("https://%s/%d/request-%d", ServerAddr, nethttp.StatusOK, i), nil)
+		cfg := config.New()
+		cfg.EnableHTTPMonitoring = true
+		cfg.EnableHTTPSMonitoring = true
+		cfg.EnableRuntimeCompiler = true
+
+		tr, err := NewTracer(cfg)
 		require.NoError(t, err)
-		reqs[req] = false
+		defer tr.Stop()
+		require.NoError(t, tr.RegisterClient("1"))
+
+		// This maps will keep track of whether or not the tracer saw this request already or not
+		reqs := make(requestsMap)
+		for i := 0; i < ExpectedOccurrences; i++ {
+			req, err := nethttp.NewRequest(nethttp.MethodGet, fmt.Sprintf("https://%s/%d/request-%d", ServerAddr, nethttp.StatusOK, i), nil)
+			require.NoError(t, err)
+			reqs[req] = false
+		}
+
+		time.Sleep(2 * time.Second)
+
+		// Test
+		clientCmd := fmt.Sprintf("%s %s %d", clientBin, ServerAddr, ExpectedOccurrences)
+		client, clientInput, err := testutil.StartCommand(clientCmd)
+		require.NoError(t, err)
+
+		// Tell client to start emitting requests
+		_, err = clientInput.Write([]byte{1})
+		require.NoError(t, err)
+		err = client.Wait()
+		require.NoError(t, err)
+
+		occurrences := PrintableInt(0)
+		require.Eventually(t, func() bool {
+			stats, err := tr.GetActiveConnections("1")
+			require.NoError(t, err)
+			occurrences += PrintableInt(countRequestsOccurrences(t, stats, reqs))
+			return occurrences == ExpectedOccurrences
+		}, 3*time.Second, 100*time.Millisecond, "Expected to find the request %v times, got %v captured. Requests not found:\n%v", ExpectedOccurrences, &occurrences, reqs)
 	}
+}
 
-	clientBin := buildGoTLSClientBin(t)
+func testHTTPGoTLSCaptureAlreadyRunning(clientBin string) func(t *testing.T) {
+	return func(t *testing.T) {
+		const (
+			ServerAddr          = "localhost:8081"
+			ExpectedOccurrences = 10
+		)
 
-	// Test
-	clientCmd := fmt.Sprintf("%s %s %d", clientBin, ServerAddr, ExpectedOccurrences)
-	_, err = testutil.RunCommand(clientCmd)
-	require.NoError(t, err)
+		// Given
+		var closeServer func() = httptest.HTTPServer(t, ServerAddr, httptest.Options{
+			EnableTLS: true,
+		})
 
-	occurrences := PrintableInt(0)
-	require.Eventually(t, func() bool {
-		stats, err := tr.GetActiveConnections("1")
+		done := make(chan struct{})
+
+		cfg := config.New()
+		cfg.EnableHTTPMonitoring = true
+		cfg.EnableHTTPSMonitoring = true
+		cfg.EnableRuntimeCompiler = true
+
+		// When
+		// This maps will keep track of whether or not the tracer saw this request already or not
+		reqs := make(requestsMap)
+		for i := 0; i < ExpectedOccurrences; i++ {
+			req, err := nethttp.NewRequest(nethttp.MethodGet, fmt.Sprintf("https://%s/%d/request-%d", ServerAddr, nethttp.StatusOK, i), nil)
+			require.NoError(t, err)
+			reqs[req] = false
+		}
+
+		clientCmd := fmt.Sprintf("%s %s %d", clientBin, ServerAddr, ExpectedOccurrences)
+		t.Cleanup(func() { os.RemoveAll(clientBin) })
+
+		go func() {
+			defer close(done)
+			c, clientInput, err := testutil.StartCommand(clientCmd)
+			require.NoError(t, err)
+			_, err = clientInput.Write([]byte{1})
+			require.NoError(t, err)
+			err = c.Wait()
+			require.NoError(t, err)
+
+			closeServer()
+		}()
+
+		tr, err := NewTracer(cfg)
 		require.NoError(t, err)
-		occurrences += PrintableInt(countRequestsOccurrences(t, stats, reqs))
-		return occurrences == ExpectedOccurrences
-	}, 3*time.Second, 100*time.Millisecond, "Expected to find the request %v times, got %v captured. Requests not found:\n%v", ExpectedOccurrences, &occurrences, reqs)
+		defer tr.Stop()
+		require.NoError(t, tr.RegisterClient("1"))
+
+		<-done
+
+		occurrences := PrintableInt(0)
+		require.Eventually(t, func() bool {
+			stats, err := tr.GetActiveConnections("1")
+			require.NoError(t, err)
+			occurrences += PrintableInt(countRequestsOccurrences(t, stats, reqs))
+			return occurrences == ExpectedOccurrences
+		}, 3*time.Second, 100*time.Millisecond, "Expected to find the request %v times, got %v captured. Requests not found:\n%v", ExpectedOccurrences, &occurrences, reqs)
+	}
 }
 
 func buildGoTLSClientBin(t *testing.T) string {
